@@ -21,7 +21,7 @@ public class CollectionUtils {
         return map;
     }
 
-    public static <T, A> List<A> transformList(Collection<T> xs, Function<T, A> mapper) {
+    public static <T, A> List<A> mapList(Function<T, A> mapper, Collection<T> xs) {
         return xs.stream()
                 .map(mapper)
                 .collect(Collectors.toList());

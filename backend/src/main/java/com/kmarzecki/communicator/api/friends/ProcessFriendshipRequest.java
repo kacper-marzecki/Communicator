@@ -1,10 +1,10 @@
 package com.kmarzecki.communicator.api.friends;
 
-import lombok.Value;
+import lombok.Getter;
+import lombok.Setter;
 
-import javax.validation.constraints.NotNull;
-
-@Value
+@Getter
+@Setter
 public class ProcessFriendshipRequest {
     boolean accept;
 }

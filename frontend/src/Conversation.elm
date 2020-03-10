@@ -1,6 +1,7 @@
 module Conversation exposing (..)
 
 import Json.Decode exposing (Decoder, field, string)
+import Json.Encode as E
 
 
 type alias ConversationId =
@@ -25,6 +26,14 @@ initNewConversationForm =
     { addedFriends = []
     , conversationName = ""
     }
+
+
+encodeCreateConversation : NewConversationFormState -> E.Value
+encodeCreateConversation form =
+    E.object
+        [ ( "name", E.string form.conversationName )
+        , ( "usernames", E.list E.string form.addedFriends )
+        ]
 
 
 conversationDecoder : Decoder Conversation

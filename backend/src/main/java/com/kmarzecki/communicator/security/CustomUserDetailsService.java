@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import static com.kmarzecki.communicator.util.CollectionUtils.asSet;
-import static com.kmarzecki.communicator.util.CollectionUtils.transformList;
+import static com.kmarzecki.communicator.util.CollectionUtils.mapList;
 
 @Service
 @AllArgsConstructor(onConstructor = @__(@Autowired))
@@ -44,9 +44,8 @@ public class CustomUserDetailsService implements UserDetailsService  {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserEntity user = userRepository.findByUsername(username);
         if (user != null) {
-            List<GrantedAuthority> authorities = transformList(
-                    user.getRoles(),
-                    role -> new SimpleGrantedAuthority(role.getRole())
+            List<GrantedAuthority> authorities = mapList(
+                    role -> new SimpleGrantedAuthority(role.getRole()), user.getRoles()
             );
             return new User(user.getUsername(), user.getPassword(), authorities);
         } else {

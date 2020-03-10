@@ -5,14 +5,15 @@
   More context in the issue:
     https://github.com/halfzebra/create-elm-app/issues/320
 */
-@import '../node_modules/bulma-divider/dist/css/bulma-divider.min.css';
+@import "../node_modules/bulma-divider/dist/css/bulma-divider.min.css";
 
 [data-elm-hot="true"] {
   height: inherit;
 }
 
 body {
-  font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
+  font-family: "Source Sans Pro", "Trebuchet MS", "Lucida Grande",
+    "Bitstream Vera Sans", "Helvetica Neue", sans-serif;
   margin: 0;
   text-align: center;
   color: #293c4b;
@@ -32,10 +33,34 @@ img {
   bottom: 0px !important;
 }
 
+.dupa {
+  height: 100%;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.fixed-column {
+  min-height: 500px;
+}
+
+.scrollable-column {
+  overflow: auto;
+}
+/* .columns {
+  display: flex !important;
+  flex-direction: row;
+  align-items: stretch;
+} */
+
+/* .is-fullheight {
+  height: 80vh;
+} */
+
 .hidden {
   visibility: hidden; /* Hidden by default. Visible on click */
 }
 #snackbar {
+  z-index: 99999;
   visibility: hidden; /* Hidden by default. Visible on click */
   min-width: 250px; /* Set a default minimum width */
   margin-left: -125px; /* Divide value of min-width by 2 */
@@ -61,36 +86,62 @@ img {
 
 /* Animations to fade the snackbar in and out */
 @-webkit-keyframes fadein {
-  from {bottom: 0; opacity: 0;}
-  to {bottom: 30px; opacity: 1;}
+  from {
+    bottom: 0;
+    opacity: 0;
+  }
+  to {
+    bottom: 30px;
+    opacity: 1;
+  }
 }
 
 @keyframes fadein {
-  from {bottom: 0; opacity: 0;}
-  to {bottom: 30px; opacity: 1;}
+  from {
+    bottom: 0;
+    opacity: 0;
+  }
+  to {
+    bottom: 30px;
+    opacity: 1;
+  }
 }
 
 @-webkit-keyframes fadeout {
-  from {bottom: 30px; opacity: 1;}
-  to {bottom: 0; opacity: 0;}
+  from {
+    bottom: 30px;
+    opacity: 1;
+  }
+  to {
+    bottom: 0;
+    opacity: 0;
+  }
 }
 
 @keyframes fadeout {
-  from {bottom: 30px; opacity: 1;}
-  to {bottom: 0; opacity: 0;}
+  from {
+    bottom: 30px;
+    opacity: 1;
+  }
+  to {
+    bottom: 0;
+    opacity: 0;
+  }
 }
 
-
-html,body {
-  font-family: 'Questrial', sans-serif;
+html,
+body {
+  height: 100vh;
+  font-family: "Questrial", sans-serif;
   font-size: 14px;
   font-weight: 300;
 }
 
 .hero.is-success {
-  background: #F2F6FA;
+  background: #f2f6fa;
 }
-.hero .nav, .hero.is-success .nav {
+.hero .nav,
+.hero.is-success .nav {
   -webkit-box-shadow: none;
   box-shadow: none;
 }
@@ -105,8 +156,9 @@ html,body {
   padding: 5px;
   background: #fff;
   border-radius: 50%;
-  -webkit-box-shadow: 0 2px 3px rgba(10,10,10,.1), 0 0 0 1px rgba(10,10,10,.1);
-  box-shadow: 0 2px 3px rgba(10,10,10,.1), 0 0 0 1px rgba(10,10,10,.1);
+  -webkit-box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1),
+    0 0 0 1px rgba(10, 10, 10, 0.1);
+  box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
 }
 input {
   font-weight: 300;
@@ -118,18 +170,18 @@ p.subtitle {
   padding-top: 1rem;
 }
 
-.login-hr{
+.login-hr {
   border-bottom: 1px solid black;
 }
 
-.has-text-black{
+.has-text-black {
   color: black;
 }
 
-.field{
+.field {
   padding-bottom: 10px;
 }
 
-.fa{
-  margin-left: 5px; 
+.fa {
+  margin-left: 5px;
 }

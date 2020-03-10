@@ -6,14 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.annotation.SendToUser;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.security.Principal;
+
+import static com.kmarzecki.communicator.util.MessageUtils.CHANNELS_TOPIC;
+import static com.kmarzecki.communicator.util.MessageUtils.FRIENDS_TOPIC;
 
 @RestController
 @RequestMapping("/conversation")
+@CrossOrigin(origins = "http://localhost:3000",allowCredentials = "true", allowedHeaders = "*")
 public class ConversationController {
 
     /**
@@ -26,15 +29,10 @@ public class ConversationController {
     private ConversationService conversationService;
     @Autowired
     private FriendsService friendsService;
+
     @MessageMapping("/get_channels")
     public void getChannels(Principal principal) {
-        conversationService.getUserChannels(principal)
-                .forEach(c -> {
-                    messagingTemplate.convertAndSendToUser(
-                            principal.getName(),
-                            "/topic/channels",
-                            c);
-                });
+        conversationService.getUserChannels(principal);
     }
 
     @MessageMapping("/get_friends")
@@ -42,11 +40,20 @@ public class ConversationController {
         friendsService.getFriendsFor(principal)
                 .forEach(f -> messagingTemplate.convertAndSendToUser(
                         principal.getName(),
-                        "/topic/friends",
+                        FRIENDS_TOPIC,
                         f));
     }
 
 
+    @PostMapping
+    public void createChannel(
+            @Valid
+            @RequestBody
+            CreateChannelRequest request,
+            Principal principal
+    ) {
+        conversationService.createChannel(request.getName(), request.getUsernames(), principal);
+    }
     /**    create conversation
      *  with one person
      *  with multiple people

@@ -29,7 +29,7 @@ const connectWs = accessToken => {
 const sendHydratingMessages = stomp => {
   sendWsEvent("/get_channels", {});
   sendWsEvent("/get_friends", {});
-}
+};
 
 const subscribeToSocket = stomp => {
   stomp.subscribe("/user/topic/channels", channel => {
@@ -39,10 +39,10 @@ const subscribeToSocket = stomp => {
     app.ports.gotFriend.send(JSON.parse(channel.body));
   });
   stomp.subscribe("/user/topic/notification", channel => {
-    showSnackbar(channel.body)
+    showSnackbar(channel.body);
   });
   stomp.subscribe("/user/topic/deleted_friends", channel => {
-    app.ports.deletedFriend(channel.body);
+    app.ports.deletedFriend.send(channel.body);
   });
 };
 

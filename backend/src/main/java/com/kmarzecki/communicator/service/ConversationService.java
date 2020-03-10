@@ -4,8 +4,11 @@ import com.kmarzecki.communicator.model.ChannelListResponse;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 
 public interface ConversationService {
 
-    List<ChannelListResponse> getUserChannels(Principal principal);
+    void getUserChannels(Principal principal);
+
+    void createChannel(String name, Set<String> usernames, Principal creator);
 }

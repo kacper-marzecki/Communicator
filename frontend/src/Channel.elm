@@ -1,10 +1,10 @@
 module Channel exposing (..)
 import Json.Decode exposing (Decoder, field, string)
 
-
+type alias ChannelId = Int
 
 type alias Channel =
-    { id : Int
+    { id : ChannelId
     , name : String
     , oneOnOne : Bool
     , users: List String

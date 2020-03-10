@@ -3,8 +3,11 @@ module Friends exposing (..)
 import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
 
+
+type alias FriendId = Int
+
 type alias Friend =
-    { id : Int
+    { id : FriendId
     , requester : String
     , target : String
     , pending : Bool
@@ -28,7 +31,11 @@ type alias FriendsSiteState =
 
 
 
-
+encodeRespondToFriendRequest: Bool -> E.Value
+encodeRespondToFriendRequest response = 
+    E.object [
+        ("accept", E.bool response)
+    ]
 initFriendsSiteState : FriendsSiteState
 initFriendsSiteState =
     { addFriendInput = ""

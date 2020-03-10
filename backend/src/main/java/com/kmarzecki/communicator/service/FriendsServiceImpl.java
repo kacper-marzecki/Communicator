@@ -47,6 +47,10 @@ public class FriendsServiceImpl implements FriendsService {
             sendError(messagingTemplate, requester, "Already a friend or in progress of becoming one");
             return;
         }
+        if (requester.equals(target)) {
+            sendError(messagingTemplate, requester, "How would You like to be Your own best friend ? :)");
+            return;
+        }
         var saved = friendshipRepository.save(FriendshipEntity.builder()
                 .requester(requester)
                 .target(target)
@@ -73,6 +77,7 @@ public class FriendsServiceImpl implements FriendsService {
         }
         friendshipRepository.delete(request);
         sendFriendshipDeletedNotification(request.getId(), request.getRequester(), request.getTarget());
+        sendError(messagingTemplate, request.getRequester(), request.getTarget() + " declined Your friend-request :(");
     }
 
     private void sendFriendshipDeletedNotification(Integer id, String... users) {
@@ -105,7 +110,9 @@ public class FriendsServiceImpl implements FriendsService {
         }
         request.setPending(false);
         friendshipRepository.save(request);
-        sendFriendshipNotification(principal.getName(), request);
+        sendFriendshipDeletedNotification(request.getId(), request.getTarget(), request.getRequester());
+        sendFriendshipNotification(request.getRequester(), request);
+        sendFriendshipNotification(request.getTarget(), request);
     }
 
     private boolean isFriendOrInProgress(String requester, String target) {
