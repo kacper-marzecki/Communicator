@@ -7,6 +7,13 @@ import Json.Encode as E
 type alias ConversationId =
     Int
 
+type alias ConversationViewFormState = 
+    {
+
+    }
+
+initConversationViewForm: ConversationViewFormState
+initConversationViewForm = {}
 
 type alias Conversation =
     { id : ConversationId

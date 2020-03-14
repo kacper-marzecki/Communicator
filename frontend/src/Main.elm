@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Browser
 import Channel exposing (..)
-import Conversation exposing (Conversation, ConversationId, NewConversationFormState, conversationsDecoder, encodeCreateConversation, initNewConversationForm)
+import Conversation exposing (Conversation, ConversationId, ConversationViewFormState, NewConversationFormState, conversationsDecoder, encodeCreateConversation, initConversationViewForm, initNewConversationForm)
 import Dict exposing (Dict)
 import Friends exposing (Friend, FriendId, FriendsSiteState, encodeRespondToFriendRequest, friendDecoder, initFriendsSiteState)
 import Home exposing (Home)
@@ -65,6 +65,9 @@ port logoutJs : () -> Cmd msg
 port deletedFriend : (String -> msg) -> Sub msg
 
 
+port gotMessage : (E.Value -> msg) -> Sub msg
+
+
 
 -- port addNewFriend : E.Value -> Cmd msg
 
@@ -82,6 +85,16 @@ getToken model =
 
         _ ->
             "falseToken"
+
+
+getLatestMessagesFromChannel : Model -> ChannelId -> Cmd Msg
+getLatestMessagesFromChannel model channelId =
+    authedGet
+        { model = model
+        , body = Http.emptyBody
+        , url = "/messages?channelId=" ++ String.fromInt channelId
+        , expect = Http.expectWhatever NoOp
+        }
 
 
 
@@ -257,12 +270,13 @@ buildMessagesUrl model page =
     Just url
 
 
-getMessagesCmd : String -> Cmd Msg
-getMessagesCmd url =
-    Http.get
-        { url = url
-        , expect = Http.expectJson (ApiMessage << GotMessages) (pageDecoder messageDecoder)
-        }
+
+-- getMessagesCmd : String -> Cmd Msg
+-- getMessagesCmd url =
+--     Http.get
+--         { url = url
+--         , expect = Http.expectJson (ApiMessage << GotMessages) (pageDecoder messageDecoder)
+--         }
 
 
 type Site
@@ -278,6 +292,7 @@ type Form
     | RegistrationForm RegistrationFormState
     | NewConversationForm NewConversationFormState
     | FriendsSiteForm FriendsSiteState
+    | ConversationViewForm ConversationViewFormState
 
 
 type alias Model =
@@ -289,8 +304,8 @@ type alias Model =
     , menuOpen : Bool
     , conversations : List Conversation
     , channels : Dict Int Channel
-    , page : Int
-    , messagesPage : Maybe (Page Message)
+    , chosenChannel : Maybe ChannelId
+    , messages : List Message
     , errors : List String
     , backendApi : String
     , bottomNotification : Maybe String
@@ -307,10 +322,10 @@ init flags =
             , form = Nothing
             , menuOpen = False
             , loading = False
+            , chosenChannel = Nothing
             , friends = []
             , errors = []
-            , messagesPage = Nothing
-            , page = 0
+            , messages = []
             , backendApi = flags.backendApi
             , bottomNotification = Nothing
             , conversations = []
@@ -329,7 +344,6 @@ init flags =
 
 type ConversationViewMsg
     = ConversationClicked ConversationId
-    | GotMessage Message
 
 
 type NewConversationFormMsg
@@ -365,9 +379,9 @@ type ApiMsg
     = GetUser
     | OpenLink String
     | GetConversations
-    | GetMessages ConversationId
+      -- | GetMessages ConversationId
     | LoggedIn (Result Http.Error User)
-    | GotMessages (Result Http.Error (Page Message))
+      -- | GotMessages (Result Http.Error (Page Message))
     | GotConversations (Result Http.Error (List Conversation))
     | RegistrationComplete (Result Http.Error ())
 
@@ -379,7 +393,9 @@ type Msg
     | GotRegisterFormMsg RegisterFormMsg
     | GotFriendsFormMsg FriendsFormMsg
     | GotNewConversationFormMsg NewConversationFormMsg
+    | GotConversationViewMsg ConversationViewMsg
     | GotUser (Result Json.Decode.Error User)
+    | GotMessage (Result Json.Decode.Error Message)
     | AuthTest (Result Http.Error ())
     | GotFriend (Result Json.Decode.Error Friend)
     | DeletedFriend (Result Json.Decode.Error FriendId)
@@ -391,7 +407,6 @@ type Msg
     | NewConversationClicked
     | CloseNewConversationFormView
     | SignOutClicked
-    | OpenConversation Int
     | BurgerClicked
     | CopyToClipboard String
     | ShowBottomNotification (Result Json.Decode.Error String)
@@ -489,9 +504,8 @@ apiUpdate msg model form =
         RegistrationComplete (Ok _) ->
             update OpenLoginSite model
 
-        GotMessages (Err _) ->
-            ( model, showSnackbar "Cannot get messages, please try later" )
-
+        -- GotMessages (Err _) ->
+        --     ( model, showSnackbar "Cannot get messages, please try later" )
         LoggedIn (Ok user) ->
             ( { model | user = Just user }, saveUser (encodeUser user) )
 
@@ -501,17 +515,14 @@ apiUpdate msg model form =
         GotConversations (Ok conversations) ->
             ( { model | conversations = conversations, loading = False }, Cmd.none )
 
-        GetMessages pageNumber ->
-            case buildMessagesUrl model pageNumber of
-                Just url ->
-                    ( { model | page = pageNumber }, Cmd.batch [ getMessagesCmd url ] )
-
-                Nothing ->
-                    update (Error "Invalid search parameters") model
-
-        GotMessages (Ok messagesPage) ->
-            ( { model | messagesPage = Just messagesPage }, Cmd.none )
-
+        -- GetMessages pageNumber ->
+        --     case buildMessagesUrl model pageNumber of
+        --         Just url ->
+        --             ( { model | page = pageNumber }, Cmd.batch [ getMessagesCmd url ] )
+        -- Nothing ->
+        --     update (Error "Invalid search parameters") model
+        -- GotMessages (Ok messagesPage) ->
+        --     ( { model | messagesPage = Just messagesPage }, Cmd.none )
         _ ->
             ( model, Cmd.none )
 
@@ -570,11 +581,35 @@ newConversationUpdate msg formState model =
             ( model, createConversation model formState )
 
 
+insertMessage : Maybe ChannelId -> List Message -> Message -> List Message
+insertMessage channelId messages message =
+    case channelId of
+        Just id ->
+            if message.channelId == id then
+                List.sortBy (\m -> m.timeMillis) (message :: messages)
+
+            else
+                messages
+
+        Nothing ->
+            messages
+
+
+conversationUpdate : ConversationViewMsg -> Model -> ConversationViewFormState -> ( Model, Cmd Msg )
+conversationUpdate msg model state =
+    case msg of
+        ConversationClicked id ->
+            ( { model | chosenChannel = Just id, messages = [] }, getLatestMessagesFromChannel model id )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.form ) of
         ( ApiMessage x, form ) ->
             apiUpdate x model form
+
+        ( GotConversationViewMsg x, Just (ConversationViewForm state) ) ->
+            conversationUpdate x model state
 
         ( GotRegisterFormMsg m, Just (RegistrationForm state) ) ->
             registrationUpdate m state model
@@ -590,6 +625,9 @@ update msg model =
 
         ( CloseNewConversationFormView, _ ) ->
             ( { model | form = Nothing }, Cmd.none )
+
+        ( GotMessage (Ok m), _ ) ->
+            ( { model | messages = insertMessage model.chosenChannel model.messages m }, Cmd.none )
 
         ( GotUser (Ok user), _ ) ->
             let
@@ -637,11 +675,10 @@ update msg model =
         ( OpenLoginSite, _ ) ->
             ( { model | site = LoginSite, form = Just (LoginForm newLoginForm), menuOpen = False }, Cmd.none )
 
-        ( OpenConversation conversationId, _ ) ->
-            ( { model | menuOpen = False, site = ConversationSite }, Cmd.none )
-
+        -- ( OpenConversation conversationId, _ ) ->
+        --     ( { model | menuOpen = False, site = ConversationSite }, Cmd.none )
         ( OpenConversationSite, _ ) ->
-            ( { model | site = ConversationSite }, getChannels () )
+            ( { model | site = ConversationSite, form = Just (ConversationViewForm initConversationViewForm) }, getChannels () )
 
         ( CopyToClipboard string, _ ) ->
             ( model, copyToClipboard (E.string string) )
@@ -751,26 +788,27 @@ messageTile =
         ]
 
 
-homesPageView : Page Home -> Html Msg
-homesPageView page =
-    let
-        homes =
-            List.map (\home -> messageTile)
-                page.content
-    in
-    div [ class "container is-fluid p-l-md", Html.Attributes.style "flex-direction" "column-reverse" ]
-        (homes
-            ++ [ div [ class "pagination is-centered is-rounded m-t-sm m-b-sm", Html.Attributes.attribute "role" "navigation" ]
-                    [ Html.button [ class "pagination-previous", Html.Attributes.disabled (page.number == 0), onClick ((ApiMessage << GetMessages) (page.number - 1)) ] [ text "Previous" ]
-                    , Html.ul [ class "pagination-list" ]
-                        [ Html.li []
-                            [ a [ class "pagination-link" ] [ text (String.fromInt (page.number + 1)) ]
-                            ]
-                        ]
-                    , Html.button [ class "pagination-next", Html.Attributes.style "margin-right" "15px", Html.Attributes.disabled (page.number + 1 == page.totalPages), onClick ((ApiMessage << GetMessages) (page.number + 1)) ] [ text "Next" ]
-                    ]
-               ]
-        )
+
+-- homesPageView : Page Home -> Html Msg
+-- homesPageView page =
+--     let
+--         homes =
+--             List.map (\home -> messageTile)
+--                 page.content
+--     in
+--     div [ class "container is-fluid p-l-md", Html.Attributes.style "flex-direction" "column-reverse" ]
+--         (homes
+--             ++ [ div [ class "pagination is-centered is-rounded m-t-sm m-b-sm", Html.Attributes.attribute "role" "navigation" ]
+--                     [ Html.button [ class "pagination-previous", Html.Attributes.disabled (page.number == 0), onClick ((ApiMessage << GetMessages) (page.number - 1)) ] [ text "Previous" ]
+--                     , Html.ul [ class "pagination-list" ]
+--                         [ Html.li []
+--                             [ a [ class "pagination-link" ] [ text (String.fromInt (page.number + 1)) ]
+--                             ]
+--                         ]
+--                     , Html.button [ class "pagination-next", Html.Attributes.style "margin-right" "15px", Html.Attributes.disabled (page.number + 1 == page.totalPages), onClick ((ApiMessage << GetMessages) (page.number + 1)) ] [ text "Next" ]
+--                     ]
+--                ]
+--         )
 
 
 mainView : Html Msg
@@ -1017,6 +1055,13 @@ messageView message =
     div [] []
 
 
+messagesView : List Message -> List (Html Msg)
+messagesView messages =
+    List.map
+        messageView
+        messages
+
+
 conversationView : Model -> List (Html Msg)
 conversationView model =
     let
@@ -1033,30 +1078,28 @@ conversationView model =
     in
     newConversationForm
         ++ [ div [ class "m-l-md m-r-md m-b-md " ]
-                [ -- div [ class "", Html.Attributes.style "width" "100vw" ]
-                  -- [ Html.button [ class " button is-rounded", onClick NewConversationClicked ] [ text "New Conversation" ]
-                  -- ]
-                  -- ,
-                  div [ class "hero is-fullheight" ]
+                [ div [ class "hero is-fullheight" ]
                     [ div
                         [ class "columns m-t-sm is-fullheight" ]
                         [ div [ class "column is-one-fifth " ]
                             [ Html.aside [ class " is-narrow-mobile fixed-column box m-l-sm has-background-white-ter" ]
                                 [ Html.button [ class "m-b-md button is-rounded", onClick NewConversationClicked ] [ text "New Conversation" ]
-                                -- , Html.p [ class "menu-label" ] [ text "Conversations" ]
                                 , div [ class "list is-hoverable" ]
                                     (List.map
-                                        (\c -> Html.a [ class "list-item" ] [ text c.name ])
+                                        (\c ->
+                                            Html.a
+                                                [ class "list-item"
+                                                , onClick (GotConversationViewMsg (ConversationClicked c.id))
+                                                ]
+                                                [ text c.name ]
+                                        )
                                         (Dict.values model.channels)
                                     )
                                 ]
                             ]
                         , div [ class "column  scrollable-column" ]
                             [ Html.aside [ class " box scrollable-column has-background-white-ter" ]
-                                (List.map
-                                    messageView
-                                    []
-                                )
+                                (messagesView model.messages)
                             ]
                         ]
                     ]
@@ -1283,6 +1326,7 @@ main =
                     , gotChannel (\c -> GotChannel (Json.Decode.decodeValue channelDecoder c))
                     , gotFriend (\f -> GotFriend (Json.Decode.decodeValue friendDecoder f))
                     , deletedFriend (\id -> DeletedFriend (Json.Decode.decodeString Json.Decode.int id))
+                    , gotMessage (\m -> GotMessage (Json.Decode.decodeValue messageDecoder m))
                     ]
                 )
         }
