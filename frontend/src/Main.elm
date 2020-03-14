@@ -1011,9 +1011,11 @@ newConversationFormView model formState =
         _ ->
             []
 
-messageView: Message -> Html Msg
-messageView message = 
-    div [][]
+
+messageView : Message -> Html Msg
+messageView message =
+    div [] []
+
 
 conversationView : Model -> List (Html Msg)
 conversationView model =
@@ -1031,15 +1033,17 @@ conversationView model =
     in
     newConversationForm
         ++ [ div [ class "m-l-md m-r-md m-b-md " ]
-                [ div [ class "", Html.Attributes.style "width" "100vw" ]
-                    [ Html.button [ class " button is-rounded", onClick NewConversationClicked ] [ text "New Conversation" ]
-                    ]
-                , div [ class "hero is-fullheight" ]
+                [ -- div [ class "", Html.Attributes.style "width" "100vw" ]
+                  -- [ Html.button [ class " button is-rounded", onClick NewConversationClicked ] [ text "New Conversation" ]
+                  -- ]
+                  -- ,
+                  div [ class "hero is-fullheight" ]
                     [ div
                         [ class "columns m-t-sm is-fullheight" ]
-                        [ div [ class "column is-one-fifth fixed-column" ]
+                        [ div [ class "column is-one-fifth " ]
                             [ Html.aside [ class " is-narrow-mobile fixed-column box m-l-sm has-background-white-ter" ]
-                                [ Html.p [ class "menu-label" ] [ text "Conversations" ]
+                                [ Html.button [ class "m-b-md button is-rounded", onClick NewConversationClicked ] [ text "New Conversation" ]
+                                -- , Html.p [ class "menu-label" ] [ text "Conversations" ]
                                 , div [ class "list is-hoverable" ]
                                     (List.map
                                         (\c -> Html.a [ class "list-item" ] [ text c.name ])
@@ -1049,10 +1053,10 @@ conversationView model =
                             ]
                         , div [ class "column  scrollable-column" ]
                             [ Html.aside [ class " box scrollable-column has-background-white-ter" ]
-                                    (List.map
-                                        messageView
-                                        []
-                                    )
+                                (List.map
+                                    messageView
+                                    []
+                                )
                             ]
                         ]
                     ]
