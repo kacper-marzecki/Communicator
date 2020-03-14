@@ -1,4 +1,4 @@
-module Message exposing (..)
+module Messages exposing (..)
 
 import Channel exposing (ChannelId)
 import Json.Decode exposing (Decoder, field, string)

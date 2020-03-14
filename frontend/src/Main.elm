@@ -13,11 +13,12 @@ import Http
 import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
 import Login exposing (LoginFormState, encodeLoginForm, newLoginForm)
-import Message exposing (Message, messageDecoder)
+import Messages exposing (Message, MessagePayload(..), messageDecoder)
 import Page exposing (Page, pageDecoder)
 import Process
 import Registration exposing (RegistrationFormState, encodeRegisterForm, initRegistrationForm)
 import Task
+import Time
 import User exposing (User, encodeUser, userDecoder)
 import Utils exposing (addIfNotPresent, isNothing, listWithout)
 
@@ -1052,7 +1053,35 @@ newConversationFormView model formState =
 
 messageView : Message -> Html Msg
 messageView message =
-    div [] []
+    Html.article [ class "media" ]
+        [ Html.figure [ class "media-left" ]
+            [ Html.p [ class "image is-64x64" ]
+                [ img [ src "https://bulma.io/images/placeholders/128x128.png" ] []
+                ]
+            ]
+        , div [ class "media-content" ]
+            [ div [ class "content " ]
+                [ Html.p []
+                    [ Html.strong [] [ text message.username ]
+                    , Html.small [] [ text (String.fromInt message.timeMillis) ]
+                    , Html.br [] []
+                    , text
+                        (case message.payload of
+                            TextMessage p ->
+                                p
+
+                            LinkMessage p ->
+                                p
+                        )
+                    ]
+                ]
+            , Html.nav [ class "level is-mobile" ]
+                [ div [ class "level-left" ]
+                    [ a [ class "level-item icon is-small" ] [ Html.i [ class "fas fa-reply" ] [] ]
+                    ]
+                ]
+            ]
+        ]
 
 
 messagesView : List Message -> List (Html Msg)
