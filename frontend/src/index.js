@@ -48,6 +48,10 @@ const subscribeToSocket = stomp => {
   stomp.subscribe("/user/topic/messages", channel => {
     app.ports.gotMessage.send(JSON.parse(channel.body));
   });
+  stomp.subscribe("/user/topic/previous_messages", channel => {
+    app.ports.gotPreviousMessage.send(JSON.parse(channel.body));
+  });
+  
 };
 
 const sendWsEvent = (topic, value) => {
@@ -126,6 +130,20 @@ app.ports.showSnackbarOut.subscribe(msg => {
 
 app.ports.getChannels.subscribe(() => {
   sendWsEvent("/get_channels", {});
+});
+
+app.ports.scrollMessagesToBottom.subscribe(() => {
+  window.setTimeout(() => {
+    var elem = document.getElementById("messagesView");
+    elem.scrollTop = elem.scrollHeight;
+  }, 100);
+});
+
+app.ports.scrollMessagesToTop.subscribe(() => {
+  window.setTimeout(() => {
+    var elem = document.getElementById("messagesView");
+    elem.scrollTop = 0;
+  }, 100);
 });
 
 app.ports.logoutJs.subscribe(() => {

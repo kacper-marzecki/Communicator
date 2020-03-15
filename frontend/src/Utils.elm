@@ -3,6 +3,7 @@ module Utils exposing (..)
 import Html exposing (..)
 import Html.Events exposing (keyCode)
 import Json.Decode as Json
+import Time
 
 
 isNothing : Maybe a -> Bool
@@ -13,6 +14,93 @@ isNothing m =
 
         Nothing ->
             True
+
+
+last : List a -> Maybe a
+last list =
+    case list of
+        x :: [] ->
+            Just x
+
+        x :: xs ->
+            last xs
+
+        [] ->
+            Nothing
+
+
+toMonthInt : Time.Month -> Int
+toMonthInt month =
+    case month of
+        Time.Jan ->
+            1
+
+        Time.Feb ->
+            2
+
+        Time.Mar ->
+            3
+
+        Time.Apr ->
+            4
+
+        Time.May ->
+            5
+
+        Time.Jun ->
+            6
+
+        Time.Jul ->
+            7
+
+        Time.Aug ->
+            8
+
+        Time.Sep ->
+            9
+
+        Time.Oct ->
+            10
+
+        Time.Nov ->
+            11
+
+        Time.Dec ->
+            12
+
+
+dateStringFromEpochSecondsmessage : Int -> String
+dateStringFromEpochSecondsmessage seconds =
+    let
+        zone =
+            Time.utc
+
+        time =
+            Time.millisToPosix <| 1000 * seconds
+
+        year =
+            String.fromInt <| Time.toYear zone time
+
+        month =
+            String.fromInt <| toMonthInt <| Time.toMonth zone time
+
+        day =
+            String.fromInt <| Time.toDay zone time
+
+        hour =
+            String.fromInt <| Time.toHour zone time
+
+        minute =
+            String.fromInt <| Time.toMillis zone time
+
+        second =
+            String.fromInt <| Time.toSecond zone time
+    in
+    String.join "." [ year, month, day ] ++ "  " ++ String.join ":" [ hour, minute, second ]
+
+
+
+-- year ++ "."++month ++"." ++day ++ " " ++ hour ++ ":" ++ minute ++ ":" ++ second
 
 
 equal : Maybe a -> a -> Bool

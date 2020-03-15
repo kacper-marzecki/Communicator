@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static com.kmarzecki.communicator.util.MessageUtils.CHANNELS_TOPIC;
 import static com.kmarzecki.communicator.util.MessageUtils.FRIENDS_TOPIC;
@@ -73,6 +75,14 @@ public class ConversationController {
 
     }
 
+    @GetMapping(path = "previous_messages")
+    public void getPreviousMessages (
+            @RequestParam(name = "channelId") Integer channelId
+            ,@RequestParam(name = "before") Long before
+            , Principal principal
+    ) {
+        conversationService.getPreviousMessages(principal.getName(), channelId, LocalDateTime.ofEpochSecond(before, 0, ZoneOffset.ofTotalSeconds(0)));
+    }
 
     /**    create conversation
      *  with one person

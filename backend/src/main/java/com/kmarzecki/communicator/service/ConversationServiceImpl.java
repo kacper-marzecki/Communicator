@@ -94,7 +94,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public void getMessages(String user, Integer channelId) {
         ChannelEntity channelEntity = channelRepository.getOne(channelId);
-        if(channelEntity.getUsers().stream().anyMatch(u -> u.getUsername().equals(user))) {
+        if(channelEntity.getUsers().stream().noneMatch(u -> u.getUsername().equals(user))) {
             throw new OperationNotPermittedException();
         }
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "time"));
@@ -108,13 +108,30 @@ public class ConversationServiceImpl implements ConversationService {
         });
     }
 
+    @Override
+    public void getPreviousMessages(String user, Integer channelId, LocalDateTime time) {
+        ChannelEntity channelEntity = channelRepository.getOne(channelId);
+        if(channelEntity.getUsers().stream().noneMatch(u -> u.getUsername().equals(user))) {
+            throw new OperationNotPermittedException();
+        }
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "time"));
+        List<MessageEntity> messages = messageRepository.findAllByChannelIdAndTimeBefore(channelId, time, pageable);
+        messages.forEach(m -> {
+            messagingTemplate.convertAndSendToUser(
+                    user,
+                    PREVIOUS_MESSAGES_TOPIC,
+                    map(m)
+            );
+        });
+    }
+
     private MessageResponse map(MessageEntity entity) {
         return MessageResponse.builder()
                 .id(entity.getId())
                 .channelId(entity.getChannelId())
                 .messageType(MessageType.TEXT_MESSAGE)
                 .payload(entity.getPayload())
-                .time(entity.getTime().toEpochSecond(ZoneOffset.ofTotalSeconds(0)) * 1000L)
+                .time(entity.getTime().toEpochSecond(ZoneOffset.ofTotalSeconds(0)))
                 .username(entity.getUser().getUsername())
                 .build();
     }

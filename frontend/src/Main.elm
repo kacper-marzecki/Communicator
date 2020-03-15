@@ -42,6 +42,12 @@ port showSnackbarOut : E.Value -> Cmd msg
 port scrollToTheTop : () -> Cmd msg
 
 
+port scrollMessagesToBottom : () -> Cmd msg
+
+
+port scrollMessagesToTop : () -> Cmd msg
+
+
 port saveUser : E.Value -> Cmd msg
 
 
@@ -69,6 +75,9 @@ port deletedFriend : (String -> msg) -> Sub msg
 port gotMessage : (E.Value -> msg) -> Sub msg
 
 
+port gotPreviousMessage : (E.Value -> msg) -> Sub msg
+
+
 
 -- port addNewFriend : E.Value -> Cmd msg
 
@@ -93,7 +102,17 @@ getLatestMessagesFromChannel model channelId =
     authedGet
         { model = model
         , body = Http.emptyBody
-        , url = "/messages?channelId=" ++ String.fromInt channelId
+        , url = "/conversation/message?channelId=" ++ String.fromInt channelId
+        , expect = Http.expectWhatever NoOp
+        }
+
+
+getPreviousMessages : Model -> ChannelId -> Int -> Cmd Msg
+getPreviousMessages model channelId timeMillis =
+    authedGet
+        { model = model
+        , body = Http.emptyBody
+        , url = "/conversation/previous_messages?channelId=" ++ String.fromInt channelId ++ "&before=" ++ String.fromInt timeMillis
         , expect = Http.expectWhatever NoOp
         }
 
@@ -217,7 +236,7 @@ createConversation model formState =
         { model = model
         , body = Http.jsonBody (encodeCreateConversation formState)
         , url = "/conversation"
-        , expect = Http.expectWhatever (GotNewConversationFormMsg << CreateConversationResponse)
+        , expect = Http.expectWhatever (GotConversationViewMsg << GotNewConversationFormMsg << CreateConversationResponse)
         }
 
 
@@ -358,6 +377,9 @@ type ConversationViewMsg
     | MessageInput String
     | ToggleSendOnEnter
     | SendClicked
+    | NewConversationClicked
+    | GotNewConversationFormMsg NewConversationFormMsg
+    | PreviousMessagesClicked
 
 
 type NewConversationFormMsg
@@ -366,6 +388,7 @@ type NewConversationFormMsg
     | ChangeConversationName String
     | CreateConversationButtonClicked
     | CreateConversationResponse (Result Http.Error ())
+    | CloseNewConversationFormView
 
 
 type RegisterFormMsg
@@ -406,10 +429,10 @@ type Msg
     | GotLoginFormMsg LoginFormMsg
     | GotRegisterFormMsg RegisterFormMsg
     | GotFriendsFormMsg FriendsFormMsg
-    | GotNewConversationFormMsg NewConversationFormMsg
     | GotConversationViewMsg ConversationViewMsg
     | GotUser (Result Json.Decode.Error User)
     | GotMessage (Result Json.Decode.Error Message)
+    | GotPreviousMessage (Result Json.Decode.Error Message)
     | AuthTest (Result Http.Error ())
     | GotFriend (Result Json.Decode.Error Friend)
     | DeletedFriend (Result Json.Decode.Error FriendId)
@@ -418,8 +441,6 @@ type Msg
     | OpenFriendsSite
     | OpenLoginSite
     | OpenConversationSite
-    | NewConversationClicked
-    | CloseNewConversationFormView
     | SignOutClicked
     | BurgerClicked
     | CopyToClipboard String
@@ -561,45 +582,39 @@ friendsUpdate msg state model =
             ( model, addNewFriend model state )
 
 
-newConversationUpdate : NewConversationFormMsg -> NewConversationFormState -> Model -> ( Model, Cmd Msg )
+newConversationUpdate : NewConversationFormMsg -> Maybe NewConversationFormState -> Model -> ( Maybe NewConversationFormState, Cmd Msg )
 newConversationUpdate msg formState model =
-    case msg of
-        AddFriendToConversation s ->
-            let
-                newFormState =
-                    { formState | addedFriends = addIfNotPresent s formState.addedFriends }
-            in
-            ( { model | form = Just (NewConversationForm newFormState) }, Cmd.none )
+    case ( msg, formState ) of
+        ( AddFriendToConversation s, Just state ) ->
+            ( Just { state | addedFriends = addIfNotPresent s state.addedFriends }, Cmd.none )
 
-        RemoveFriendFromConversation s ->
-            let
-                newFormState =
-                    { formState | addedFriends = List.filter (\f -> f /= s) formState.addedFriends }
-            in
-            ( { model | form = Just (NewConversationForm newFormState) }, Cmd.none )
+        ( RemoveFriendFromConversation s, Just state ) ->
+            ( Just { state | addedFriends = List.filter (\f -> f /= s) state.addedFriends }, Cmd.none )
 
-        ChangeConversationName s ->
-            let
-                newFormState =
-                    { formState | conversationName = s }
-            in
-            ( { model | form = Just (NewConversationForm newFormState) }, Cmd.none )
+        ( ChangeConversationName s, Just state ) ->
+            ( Just { state | conversationName = s }, Cmd.none )
 
-        CreateConversationResponse (Ok _) ->
-            update CloseNewConversationFormView model
+        ( CloseNewConversationFormView, _ ) ->
+            ( Nothing, Cmd.none )
 
-        CreateConversationResponse (Err _) ->
-            ( model, Cmd.none )
+        ( CreateConversationResponse (Ok _), _ ) ->
+            ( Nothing, Cmd.none )
 
-        CreateConversationButtonClicked ->
-            ( model, createConversation model formState )
+        ( CreateConversationResponse (Err _), _ ) ->
+            ( Nothing, showSnackbar "Cannot create such conversation" )
+
+        ( CreateConversationButtonClicked, Just state ) ->
+            ( Just state, createConversation model state )
+
+        ( _, Nothing ) ->
+            ( Nothing, Cmd.none )
 
 
 insertMessage : Maybe ChannelId -> List Message -> Message -> List Message
 insertMessage channelId messages message =
     case channelId of
         Just id ->
-            if message.channelId == id then
+            if message.channelId == id && not (List.member message messages) then
                 List.sortBy (\m -> m.timeMillis) (message :: messages)
 
             else
@@ -612,6 +627,34 @@ insertMessage channelId messages message =
 conversationUpdate : ConversationViewMsg -> Model -> ConversationViewFormState -> ( Model, Cmd Msg )
 conversationUpdate msg model state =
     case msg of
+        GotNewConversationFormMsg m ->
+            let
+                ( newConversationForm, cmd ) =
+                    newConversationUpdate m state.newConversationFormState model
+
+                newFormState =
+                    { state | newConversationFormState = newConversationForm }
+            in
+            ( { model | form = Just (ConversationViewForm newFormState) }, cmd )
+
+        PreviousMessagesClicked ->
+            case ( model.chosenChannel, model.messages ) of
+                ( Just id, x :: xs ) ->
+                    ( model, getPreviousMessages model id x.timeMillis )
+
+                ( _, _ ) ->
+                    ( model, Cmd.none )
+
+        NewConversationClicked ->
+            let
+                newConversationForm =
+                    initNewConversationForm
+
+                newFormState =
+                    { state | newConversationFormState = Just newConversationForm }
+            in
+            ( { model | form = Just (ConversationViewForm newFormState) }, Cmd.none )
+
         ConversationClicked id ->
             ( { model | chosenChannel = Just id, messages = [] }, getLatestMessagesFromChannel model id )
 
@@ -656,14 +699,27 @@ update msg model =
         ( GotFriendsFormMsg m, Just (FriendsSiteForm state) ) ->
             friendsUpdate m state model
 
-        ( GotNewConversationFormMsg m, Just (NewConversationForm state) ) ->
-            newConversationUpdate m state model
-
-        ( CloseNewConversationFormView, _ ) ->
-            ( { model | form = Nothing }, Cmd.none )
-
         ( GotMessage (Ok m), _ ) ->
-            ( { model | messages = insertMessage model.chosenChannel model.messages m }, Cmd.none )
+            let
+                cmd =
+                    if Utils.equal model.chosenChannel m.channelId then
+                        scrollMessagesToBottom ()
+
+                    else
+                        Cmd.none
+            in
+            ( { model | messages = insertMessage model.chosenChannel model.messages m }, cmd )
+
+        ( GotPreviousMessage (Ok m), _ ) ->
+            let
+                cmd =
+                    if Utils.equal model.chosenChannel m.channelId then
+                        scrollMessagesToTop ()
+
+                    else
+                        Cmd.none
+            in
+            ( { model | messages = insertMessage model.chosenChannel model.messages m }, cmd )
 
         ( GotUser (Ok user), _ ) ->
             let
@@ -704,9 +760,6 @@ update msg model =
 
         ( GotChannel (Ok channel), _ ) ->
             ( addChannel model channel, Cmd.none )
-
-        ( NewConversationClicked, _ ) ->
-            ( { model | form = Just (NewConversationForm initNewConversationForm) }, Cmd.none )
 
         ( OpenLoginSite, _ ) ->
             ( { model | site = LoginSite, form = Just (LoginForm newLoginForm), menuOpen = False }, Cmd.none )
@@ -991,99 +1044,99 @@ registrationView model =
         ]
 
 
-newConversationFormView : Model -> NewConversationFormState -> List (Html Msg)
-newConversationFormView model formState =
-    let
-        myFriends =
-            getMyFriends model
+newConversationFormView : Model -> Maybe NewConversationFormState -> List (Html Msg)
+newConversationFormView model maybeFormState =
+    case maybeFormState of
+        Nothing ->
+            []
 
-        friendButton action name =
-            Html.button
-                [ class "button is-rounded"
-                , onClick (action name)
-                ]
-                [ text name ]
+        Just formState ->
+            let
+                myFriends =
+                    getMyFriends model
 
-        friendsButtons clickAction friends =
-            List.map
-                (friendButton clickAction)
-                friends
+                friendButton action name =
+                    Html.button
+                        [ class "button is-rounded"
+                        , onClick (action name)
+                        ]
+                        [ text name ]
 
-        myFriendsButtons =
-            friendsButtons (GotNewConversationFormMsg << AddFriendToConversation)
-                (listWithout myFriends formState.addedFriends)
+                friendsButtons clickAction friends =
+                    List.map
+                        (friendButton clickAction)
+                        friends
 
-        friendsToAddToConversation =
-            friendsButtons (GotNewConversationFormMsg << RemoveFriendFromConversation)
-                formState.addedFriends
+                myFriendsButtons =
+                    friendsButtons (GotConversationViewMsg << GotNewConversationFormMsg << AddFriendToConversation)
+                        (listWithout myFriends formState.addedFriends)
 
-        friendSelect =
-            if List.isEmpty model.friends then
-                div [ class "container has-text-danger" ] [ text "No Friends, no messages :(" ]
+                friendsToAddToConversation =
+                    friendsButtons (GotConversationViewMsg << GotNewConversationFormMsg << RemoveFriendFromConversation)
+                        formState.addedFriends
 
-            else
-                div [ class "columns is-multiline" ]
-                    [ --  Html.label [ class "column is-full label" ] [ text "Select friends" ]
-                      -- ,
-                      div [ class "column is-full" ]
-                        [ div [ class "field is-horizontal" ]
-                            [ div [ class "field-label is-normal" ]
-                                [ Html.label [ class "label" ] [ text "Name" ]
-                                ]
-                            , div [ class "field-body" ]
-                                [ div [ class "field" ]
-                                    [ div [ class "control " ]
-                                        [ Html.input
-                                            [ class "input is-pulled-left m-r-sm"
-                                            , Html.Attributes.placeholder "Conversation name"
-                                            , Html.Attributes.value formState.conversationName
-                                            , onInput (GotNewConversationFormMsg << ChangeConversationName)
+                friendSelect =
+                    if List.isEmpty model.friends then
+                        div [ class "container has-text-danger" ] [ text "No Friends, no messages :(" ]
+
+                    else
+                        div [ class "columns is-multiline" ]
+                            [ --  Html.label [ class "column is-full label" ] [ text "Select friends" ]
+                              -- ,
+                              div [ class "column is-full" ]
+                                [ div [ class "field is-horizontal" ]
+                                    [ div [ class "field-label is-normal" ]
+                                        [ Html.label [ class "label" ] [ text "Name" ]
+                                        ]
+                                    , div [ class "field-body" ]
+                                        [ div [ class "field" ]
+                                            [ div [ class "control " ]
+                                                [ Html.input
+                                                    [ class "input is-pulled-left m-r-sm"
+                                                    , Html.Attributes.placeholder "Conversation name"
+                                                    , Html.Attributes.value formState.conversationName
+                                                    , onInput (GotConversationViewMsg << GotNewConversationFormMsg << ChangeConversationName)
+                                                    ]
+                                                    []
+                                                ]
                                             ]
-                                            []
                                         ]
                                     ]
                                 ]
+                            , div [ class "column is-full" ]
+                                [ div [ class "columns is is-multiline card" ]
+                                    [ div [ class "column is-one-second" ]
+                                        (div [ class "column is-full" ] [ text "Click to add:" ] :: myFriendsButtons)
+                                    , div [ class "column is-one-second" ]
+                                        (div [ class "column is-full" ] [ text "Friends in conversation:" ] :: friendsToAddToConversation)
+                                    ]
+                                ]
+                            , div [ class "control column is-full" ]
+                                [ Html.button
+                                    [ class "button is-primary is-rounded is-fullwidth"
+                                    , Html.Attributes.disabled (List.isEmpty friendsToAddToConversation || String.isEmpty formState.conversationName)
+                                    , onClick (GotConversationViewMsg <| GotNewConversationFormMsg <| CreateConversationButtonClicked)
+                                    ]
+                                    [ text "Create conversation !" ]
+                                ]
                             ]
-                        ]
-                    , div [ class "column is-full" ]
-                        [ div [ class "columns is is-multiline card" ]
-                            [ div [ class "column is-one-second" ]
-                                (div [ class "column is-full" ] [ text "Click to add:" ] :: myFriendsButtons)
-                            , div [ class "column is-one-second" ]
-                                (div [ class "column is-full" ] [ text "Friends in conversation:" ] :: friendsToAddToConversation)
-                            ]
-                        ]
-                    , div [ class "control column is-full" ]
-                        [ Html.button
-                            [ class "button is-primary is-rounded is-fullwidth"
-                            , Html.Attributes.disabled (List.isEmpty friendsToAddToConversation || String.isEmpty formState.conversationName)
-                            , onClick (GotNewConversationFormMsg CreateConversationButtonClicked)
-                            ]
-                            [ text "Create conversation !" ]
-                        ]
-                    ]
-    in
-    case model.form of
-        Just (NewConversationForm form) ->
+            in
             [ div [ class "modal is-active" ]
                 [ div [ class "modal-background" ] []
                 , div [ class "modal-card" ]
                     [ Html.header [ class "modal-card-head" ]
                         [ Html.p [ class "modal-card-title" ] [ text "Create new conversation" ]
-                        , Html.button [ class "modal-close is-large", onClick CloseNewConversationFormView ] []
+                        , Html.button [ class "modal-close is-large", onClick (GotConversationViewMsg <| GotNewConversationFormMsg <| CloseNewConversationFormView) ] []
                         ]
                     , Html.section [ class "modal-card-body" ]
                         [ friendSelect
                         ]
                     , Html.footer [ class "modal-card-footer" ]
-                        [ Html.button [ class "modal-close is-large", onClick CloseNewConversationFormView ] []
+                        [ Html.button [ class "modal-close is-large", onClick (GotConversationViewMsg <| GotNewConversationFormMsg <| CloseNewConversationFormView) ] []
                         ]
                     ]
                 ]
             ]
-
-        _ ->
-            []
 
 
 messageView : Message -> Html Msg
@@ -1097,8 +1150,8 @@ messageView message =
         , div [ class "media-content", Html.Attributes.style "overflow-x" "unset" ]
             [ div [ class "content " ]
                 [ Html.p []
-                    [ Html.strong [] [ text message.username ]
-                    , Html.small [] [ text (String.fromInt message.timeMillis) ]
+                    [ Html.strong [] [ text <| message.username ++ "   " ]
+                    , Html.small [] [ text (Utils.dateStringFromEpochSecondsmessage message.timeMillis) ]
                     , Html.br [] []
                     , text
                         (case message.payload of
@@ -1143,7 +1196,7 @@ messageInputView messages formState model =
             [ div [ class "field" ]
                 [ Html.p [ class "control " ]
                     [ Html.textarea
-                        [ class "textarea"
+                        [ class "is-fullwidth input"
                         , Html.Attributes.placeholder "Message content"
                         , onInput (GotConversationViewMsg << MessageInput)
                         , enterHandler
@@ -1183,14 +1236,6 @@ messageInputView messages formState model =
 conversationView : Model -> List (Html Msg)
 conversationView model =
     let
-        newFormState =
-            case model.form of
-                Just (NewConversationForm state) ->
-                    state
-
-                _ ->
-                    initNewConversationForm
-
         formState =
             case model.form of
                 Just (ConversationViewForm state) ->
@@ -1199,8 +1244,27 @@ conversationView model =
                 _ ->
                     initConversationViewForm
 
+        previousMessageIndicator =
+            if List.length model.messages < 10 then
+                []
+
+            else
+                [ Html.button [ class "button is-rounded", onClick (GotConversationViewMsg PreviousMessagesClicked) ]
+                    [ Html.i [ class "fas fa-arrow-up" ] [] ]
+                ]
+
+        messageTiles =
+            if List.isEmpty model.messages then
+                [ text "No messages :(" ]
+
+            else
+                previousMessageIndicator
+                    ++ List.map
+                        messageView
+                        model.messages
+
         newConversationForm =
-            newConversationFormView model newFormState
+            newConversationFormView model formState.newConversationFormState
     in
     newConversationForm
         ++ [ div [ class "m-l-md m-r-md m-b-md " ]
@@ -1211,15 +1275,15 @@ conversationView model =
                             [ Html.aside [ class " is-narrow-mobile  box m-l-sm has-background-white-ter" ]
                                 [ Html.button
                                     [ class "m-b-md button is-rounded"
-                                    , onClick NewConversationClicked
+                                    , onClick (GotConversationViewMsg NewConversationClicked)
                                     ]
                                     [ text "New Conversation" ]
-                                , div [ class "list is-hoverable" ]
+                                , div [ class "list is-hoverable has-background-white" ]
                                     (List.map
                                         (\c ->
                                             Html.a
                                                 [ Html.Attributes.classList
-                                                    [ ( "list-item", True )
+                                                    [ ( "list-item is-borderless", True )
                                                     , ( "has-background-white", Utils.equal model.chosenChannel c.id )
                                                     ]
                                                 , onClick (GotConversationViewMsg (ConversationClicked c.id))
@@ -1231,11 +1295,8 @@ conversationView model =
                                 ]
                             ]
                         , div [ class "column fixed-column" ]
-                            [ Html.aside [ class " box scrollable-column has-background-white-ter" ]
-                                (List.map
-                                    messageView
-                                    model.messages
-                                )
+                            [ Html.aside [ class " box scrollable-column has-background-white-ter", Html.Attributes.id "messagesView" ]
+                                messageTiles
                             , Html.aside [ class "box has-background-white-ter" ]
                                 [ messageInputView model.messages formState model
                                 ]
@@ -1443,6 +1504,7 @@ main =
                     , gotFriend (\f -> GotFriend (Json.Decode.decodeValue friendDecoder f))
                     , deletedFriend (\id -> DeletedFriend (Json.Decode.decodeString Json.Decode.int id))
                     , gotMessage (\m -> GotMessage (Json.Decode.decodeValue messageDecoder m))
+                    , gotPreviousMessage (\m -> GotPreviousMessage (Json.Decode.decodeValue messageDecoder m))
                     ]
                 )
         }

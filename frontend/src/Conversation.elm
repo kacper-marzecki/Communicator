@@ -11,6 +11,7 @@ type alias ConversationId =
 type alias ConversationViewFormState =
     { messageInput : String
     , sendOnEnter : Bool
+    , newConversationFormState : Maybe NewConversationFormState
     }
 
 
@@ -18,6 +19,7 @@ initConversationViewForm : ConversationViewFormState
 initConversationViewForm =
     { messageInput = ""
     , sendOnEnter = False
+    , newConversationFormState = Nothing
     }
 
 
