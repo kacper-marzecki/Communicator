@@ -1,5 +1,6 @@
 package com.kmarzecki.communicator.service;
 
+import com.kmarzecki.communicator.api.conversation.MessageRequest;
 import com.kmarzecki.communicator.model.ChannelListResponse;
 
 import java.security.Principal;
@@ -11,4 +12,8 @@ public interface ConversationService {
     void getUserChannels(Principal principal);
 
     void createChannel(String name, Set<String> usernames, Principal creator);
+
+    void message(String from, MessageRequest request);
+
+    void getMessages(String user, Integer channelId);
 }

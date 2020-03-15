@@ -39,9 +39,25 @@ img {
   margin-bottom: 0;
 }
 
+.test {
+  height: 100%;
+  display: flex !important;
+  /* align-items: stretch; */
+  /* position: relative; */
+  align-self: stretch !important;
+  /* flex-grow: initial; */
+}
+
+.is-fullheight.columns {
+    height: calc(100vh - ( 3.25rem - .75rem ) );
+}
+
 .fixed-column {
-  min-height: 500px;
-  max-height: 700px;
+  /* min-height: 500px; */
+  /* max-height: 700px; */
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
 }
 

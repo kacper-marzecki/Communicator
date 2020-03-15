@@ -2,6 +2,7 @@ module Messages exposing (..)
 
 import Channel exposing (ChannelId)
 import Json.Decode exposing (Decoder, field, string)
+import Json.Encode as E
 
 
 type alias MessageId =
@@ -72,6 +73,14 @@ messagePayloadDecoder =
 --                         |> Json.Decode.succeed
 --                 ( _, Just p ) ->
 --                     Json.Decode.succeed (LinkMessage p)
+
+
+encodeSendMessageRequest : String -> Channel.ChannelId -> E.Value
+encodeSendMessageRequest message channelId =
+    E.object
+        [ ( "channelId", E.int channelId )
+        , ( "payload", E.string message )
+        ]
 
 
 messageDecoder : Decoder Message

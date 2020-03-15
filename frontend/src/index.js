@@ -44,6 +44,10 @@ const subscribeToSocket = stomp => {
   stomp.subscribe("/user/topic/deleted_friends", channel => {
     app.ports.deletedFriend.send(channel.body);
   });
+
+  stomp.subscribe("/user/topic/messages", channel => {
+    app.ports.gotMessage.send(JSON.parse(channel.body));
+  });
 };
 
 const sendWsEvent = (topic, value) => {

@@ -16,7 +16,7 @@ import static com.kmarzecki.communicator.util.MessageUtils.FRIENDS_TOPIC;
 
 @RestController
 @RequestMapping("/conversation")
-@CrossOrigin(origins = "http://localhost:3000",allowCredentials = "true", allowedHeaders = "*")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", allowedHeaders = "*")
 public class ConversationController {
 
     /**
@@ -49,11 +49,31 @@ public class ConversationController {
     public void createChannel(
             @Valid
             @RequestBody
-            CreateChannelRequest request,
+                    CreateChannelRequest request,
             Principal principal
     ) {
         conversationService.createChannel(request.getName(), request.getUsernames(), principal);
     }
+
+    @PostMapping("/message")
+    public void message(
+            @Valid
+            @RequestBody
+                    MessageRequest request,
+            Principal principal) {
+        conversationService.message(principal.getName(), request);
+    }
+
+    @GetMapping("/message")
+    public void getMessages(
+            @RequestParam(name = "channelId") Integer channelId
+            , Principal principal
+    ) {
+        conversationService.getMessages(principal.getName(), channelId);
+
+    }
+
+
     /**    create conversation
      *  with one person
      *  with multiple people

@@ -126,6 +126,16 @@ respondToFriendRequest id response model =
         }
 
 
+sendMessage : String -> ChannelId -> Model -> Cmd Msg
+sendMessage message channelId model =
+    authedPost
+        { model = model
+        , url = "/conversation/message"
+        , expect = Http.expectWhatever NoOp
+        , body = Http.jsonBody (Messages.encodeSendMessageRequest message channelId)
+        }
+
+
 authedRequest :
     { model : Model
     , body : Http.Body
@@ -345,6 +355,9 @@ init flags =
 
 type ConversationViewMsg
     = ConversationClicked ConversationId
+    | MessageInput String
+    | ToggleSendOnEnter
+    | SendClicked
 
 
 type NewConversationFormMsg
@@ -601,6 +614,28 @@ conversationUpdate msg model state =
     case msg of
         ConversationClicked id ->
             ( { model | chosenChannel = Just id, messages = [] }, getLatestMessagesFromChannel model id )
+
+        MessageInput s ->
+            let
+                newState =
+                    { state | messageInput = s }
+            in
+            ( { model | form = Just (ConversationViewForm newState) }, Cmd.none )
+
+        ToggleSendOnEnter ->
+            let
+                newState =
+                    { state | sendOnEnter = not state.sendOnEnter }
+            in
+            ( { model | form = Just (ConversationViewForm newState) }, Cmd.none )
+
+        SendClicked ->
+            case model.chosenChannel of
+                Just id ->
+                    ( model, sendMessage state.messageInput id model )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -1059,7 +1094,7 @@ messageView message =
                 [ img [ src "https://bulma.io/images/placeholders/128x128.png" ] []
                 ]
             ]
-        , div [ class "media-content" ]
+        , div [ class "media-content", Html.Attributes.style "overflow-x" "unset" ]
             [ div [ class "content " ]
                 [ Html.p []
                     [ Html.strong [] [ text message.username ]
@@ -1084,17 +1119,71 @@ messageView message =
         ]
 
 
-messagesView : List Message -> List (Html Msg)
-messagesView messages =
-    List.map
-        messageView
-        messages
+messageInputView : List Message -> ConversationViewFormState -> Model -> Html Msg
+messageInputView messages formState model =
+    let
+        isButtonDisabled =
+            Utils.isNothing model.chosenChannel
+
+        enterHandler =
+            if formState.sendOnEnter then
+                Utils.onEnter (GotConversationViewMsg SendClicked)
+
+            else
+                Html.Attributes.attribute "asd" "asd"
+    in
+    Html.article [ class "media" ]
+        [ Html.figure [ class "media-left" ]
+            [ Html.p [ class "image is-64x64" ]
+                [ img [ src "https://bulma.io/images/placeholders/128x128.png" ]
+                    []
+                ]
+            ]
+        , div [ class "media-content" ]
+            [ div [ class "field" ]
+                [ Html.p [ class "control " ]
+                    [ Html.textarea
+                        [ class "textarea"
+                        , Html.Attributes.placeholder "Message content"
+                        , onInput (GotConversationViewMsg << MessageInput)
+                        , enterHandler
+                        ]
+                        []
+                    ]
+                ]
+            , nav [ class "level m-b-sm" ]
+                [ div [ class "level-left" ]
+                    [ div [ class "level-item" ]
+                        [ Html.button
+                            [ class "button is-primary"
+                            , Html.Attributes.disabled isButtonDisabled
+                            , onClick (GotConversationViewMsg SendClicked)
+                            ]
+                            [ text "Send" ]
+                        ]
+                    ]
+                , div [ class "level-right" ]
+                    [ div [ class "level-item" ]
+                        [ Html.label [ class "checkbox" ]
+                            [ input
+                                [ Html.Attributes.type_ "checkbox"
+                                , Html.Attributes.checked formState.sendOnEnter
+                                , onClick (GotConversationViewMsg ToggleSendOnEnter)
+                                ]
+                                []
+                            , text "Press enter to send"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
 
 
 conversationView : Model -> List (Html Msg)
 conversationView model =
     let
-        formState =
+        newFormState =
             case model.form of
                 Just (NewConversationForm state) ->
                     state
@@ -1102,22 +1191,37 @@ conversationView model =
                 _ ->
                     initNewConversationForm
 
+        formState =
+            case model.form of
+                Just (ConversationViewForm state) ->
+                    state
+
+                _ ->
+                    initConversationViewForm
+
         newConversationForm =
-            newConversationFormView model formState
+            newConversationFormView model newFormState
     in
     newConversationForm
         ++ [ div [ class "m-l-md m-r-md m-b-md " ]
                 [ div [ class "hero is-fullheight" ]
                     [ div
-                        [ class "columns m-t-sm is-fullheight" ]
-                        [ div [ class "column is-one-fifth " ]
-                            [ Html.aside [ class " is-narrow-mobile fixed-column box m-l-sm has-background-white-ter" ]
-                                [ Html.button [ class "m-b-md button is-rounded", onClick NewConversationClicked ] [ text "New Conversation" ]
+                        [ class "columns m-t-sm is-fullheight test" ]
+                        [ div [ class "column is-one-fifth fixed-column" ]
+                            [ Html.aside [ class " is-narrow-mobile  box m-l-sm has-background-white-ter" ]
+                                [ Html.button
+                                    [ class "m-b-md button is-rounded"
+                                    , onClick NewConversationClicked
+                                    ]
+                                    [ text "New Conversation" ]
                                 , div [ class "list is-hoverable" ]
                                     (List.map
                                         (\c ->
                                             Html.a
-                                                [ class "list-item"
+                                                [ Html.Attributes.classList
+                                                    [ ( "list-item", True )
+                                                    , ( "has-background-white", Utils.equal model.chosenChannel c.id )
+                                                    ]
                                                 , onClick (GotConversationViewMsg (ConversationClicked c.id))
                                                 ]
                                                 [ text c.name ]
@@ -1126,37 +1230,20 @@ conversationView model =
                                     )
                                 ]
                             ]
-                        , div [ class "column  scrollable-column" ]
+                        , div [ class "column fixed-column" ]
                             [ Html.aside [ class " box scrollable-column has-background-white-ter" ]
-                                (messagesView model.messages)
+                                (List.map
+                                    messageView
+                                    model.messages
+                                )
+                            , Html.aside [ class "box has-background-white-ter" ]
+                                [ messageInputView model.messages formState model
+                                ]
                             ]
                         ]
                     ]
                 ]
            ]
-
-
-
---     [ Html.aside [ class "menu is-narrow-mobile is-fullheight box m-l-sm" ]
---         [ Html.p [ class "menu-label" ] [ text "Conversations" ]
---         , Html.ul [ class "menu-list" ]
---             (List.map
---                 (\c -> Html.li [] [ text c.name ])
---                 model.channels
---             )
---         ]
---     ]
--- , div [ class "column  " ]
---     [ Html.aside [ class " box menu is-fullheight " ]
---         [ Html.p [ class "menu-label" ] [ text "Conversations" ]
---         , Html.ul [ class "menu-list" ]
---             (List.map
---                 (\c -> Html.li [] [ text c.name ])
---                 model.channels
---             )
---         ]
---     ]
--- ]
 
 
 getUserName : Model -> String
