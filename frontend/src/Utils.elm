@@ -6,6 +6,16 @@ import Json.Decode as Json
 import Time
 
 
+getOrDefault : Maybe a -> a -> a
+getOrDefault maybe default =
+    case maybe of
+        Just x ->
+            x
+
+        Nothing ->
+            default
+
+
 isNothing : Maybe a -> Bool
 isNothing m =
     case m of
@@ -97,10 +107,6 @@ dateStringFromEpochSecondsmessage seconds =
             String.fromInt <| Time.toSecond zone time
     in
     String.join "." [ year, month, day ] ++ "  " ++ String.join ":" [ hour, minute, second ]
-
-
-
--- year ++ "."++month ++"." ++day ++ " " ++ hour ++ ":" ++ minute ++ ":" ++ second
 
 
 equal : Maybe a -> a -> Bool

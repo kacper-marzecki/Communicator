@@ -5,7 +5,6 @@ import Channel exposing (..)
 import Conversation exposing (Conversation, ConversationId, ConversationViewFormState, NewConversationFormState, conversationsDecoder, encodeCreateConversation, initConversationViewForm, initNewConversationForm)
 import Dict exposing (Dict)
 import Friends exposing (Friend, FriendId, FriendsSiteState, encodeRespondToFriendRequest, friendDecoder, initFriendsSiteState)
-import Home exposing (Home)
 import Html exposing (Html, a, div, h1, i, img, input, nav, td, text, tr)
 import Html.Attributes exposing (attribute, class, src, title)
 import Html.Events exposing (onClick, onInput)
@@ -78,10 +77,6 @@ port gotMessage : (E.Value -> msg) -> Sub msg
 port gotPreviousMessage : (E.Value -> msg) -> Sub msg
 
 
-
--- port addNewFriend : E.Value -> Cmd msg
-
-
 showSnackbar : String -> Cmd msg
 showSnackbar s =
     showSnackbarOut (E.string s)
@@ -115,15 +110,6 @@ getPreviousMessages model channelId timeMillis =
         , url = "/conversation/previous_messages?channelId=" ++ String.fromInt channelId ++ "&before=" ++ String.fromInt timeMillis
         , expect = Http.expectWhatever NoOp
         }
-
-
-
--- getConversations : Model -> Cmd Msg
--- getConversations model =
---     Http.get
---         { url = model.backendApi ++ "/conversations"
---         , expect = Http.expectJson (ApiMessage << GotConversations) conversationsDecoder
---         }
 
 
 login : String -> LoginFormState -> Cmd Msg
@@ -271,20 +257,6 @@ registerUser backendApi registerForm =
         }
 
 
-
--- getUserInfo : String -> String -> Cmd Msg
--- getUserInfo backendApi authentication =
---     Http.request
---         { method = "GET"
---         , url = backendApi ++ "/api/auth/me"
---         , expect = Http.expectJson (ApiMessage << GotUser) userDecoder
---         , headers = [ Http.header "token" authentication ]
---         , body = Http.emptyBody
---         , timeout = Nothing
---         , tracker = Nothing
---         }
-
-
 buildMessagesUrl : Model -> Int -> Maybe String
 buildMessagesUrl model page =
     let
@@ -298,15 +270,6 @@ buildMessagesUrl model page =
                 ++ String.fromInt page
     in
     Just url
-
-
-
--- getMessagesCmd : String -> Cmd Msg
--- getMessagesCmd url =
---     Http.get
---         { url = url
---         , expect = Http.expectJson (ApiMessage << GotMessages) (pageDecoder messageDecoder)
---         }
 
 
 type Site
@@ -416,9 +379,7 @@ type ApiMsg
     = GetUser
     | OpenLink String
     | GetConversations
-      -- | GetMessages ConversationId
     | LoggedIn (Result Http.Error User)
-      -- | GotMessages (Result Http.Error (Page Message))
     | GotConversations (Result Http.Error (List Conversation))
     | RegistrationComplete (Result Http.Error ())
 
@@ -539,8 +500,6 @@ apiUpdate msg model form =
         RegistrationComplete (Ok _) ->
             update OpenLoginSite model
 
-        -- GotMessages (Err _) ->
-        --     ( model, showSnackbar "Cannot get messages, please try later" )
         LoggedIn (Ok user) ->
             ( { model | user = Just user }, saveUser (encodeUser user) )
 
@@ -550,14 +509,6 @@ apiUpdate msg model form =
         GotConversations (Ok conversations) ->
             ( { model | conversations = conversations, loading = False }, Cmd.none )
 
-        -- GetMessages pageNumber ->
-        --     case buildMessagesUrl model pageNumber of
-        --         Just url ->
-        --             ( { model | page = pageNumber }, Cmd.batch [ getMessagesCmd url ] )
-        -- Nothing ->
-        --     update (Error "Invalid search parameters") model
-        -- GotMessages (Ok messagesPage) ->
-        --     ( { model | messagesPage = Just messagesPage }, Cmd.none )
         _ ->
             ( model, Cmd.none )
 
@@ -764,8 +715,6 @@ update msg model =
         ( OpenLoginSite, _ ) ->
             ( { model | site = LoginSite, form = Just (LoginForm newLoginForm), menuOpen = False }, Cmd.none )
 
-        -- ( OpenConversation conversationId, _ ) ->
-        --     ( { model | menuOpen = False, site = ConversationSite }, Cmd.none )
         ( OpenConversationSite, _ ) ->
             ( { model | site = ConversationSite, form = Just (ConversationViewForm initConversationViewForm) }, getChannels () )
 
@@ -787,7 +736,6 @@ update msg model =
             ( { model | bottomNotification = Nothing }, Cmd.none )
 
         ( SignOutClicked, _ ) ->
-            -- TODO sign out api
             ( { model | user = Nothing, site = MainSite }, logoutJs () )
 
         ( Error err, _ ) ->
@@ -877,29 +825,6 @@ messageTile =
         ]
 
 
-
--- homesPageView : Page Home -> Html Msg
--- homesPageView page =
---     let
---         homes =
---             List.map (\home -> messageTile)
---                 page.content
---     in
---     div [ class "container is-fluid p-l-md", Html.Attributes.style "flex-direction" "column-reverse" ]
---         (homes
---             ++ [ div [ class "pagination is-centered is-rounded m-t-sm m-b-sm", Html.Attributes.attribute "role" "navigation" ]
---                     [ Html.button [ class "pagination-previous", Html.Attributes.disabled (page.number == 0), onClick ((ApiMessage << GetMessages) (page.number - 1)) ] [ text "Previous" ]
---                     , Html.ul [ class "pagination-list" ]
---                         [ Html.li []
---                             [ a [ class "pagination-link" ] [ text (String.fromInt (page.number + 1)) ]
---                             ]
---                         ]
---                     , Html.button [ class "pagination-next", Html.Attributes.style "margin-right" "15px", Html.Attributes.disabled (page.number + 1 == page.totalPages), onClick ((ApiMessage << GetMessages) (page.number + 1)) ] [ text "Next" ]
---                     ]
---                ]
---         )
-
-
 mainView : Html Msg
 mainView =
     Html.section [ class "hero is-primary  is-fullheight" ] []
@@ -975,10 +900,6 @@ loginView model =
                 ]
             ]
         ]
-
-
-
--- |> Html.map (\q -> ApiMessage << q)
 
 
 registrationView : Model -> Html Msg
@@ -1081,9 +1002,7 @@ newConversationFormView model maybeFormState =
 
                     else
                         div [ class "columns is-multiline" ]
-                            [ --  Html.label [ class "column is-full label" ] [ text "Select friends" ]
-                              -- ,
-                              div [ class "column is-full" ]
+                            [ div [ class "column is-full" ]
                                 [ div [ class "field is-horizontal" ]
                                     [ div [ class "field-label is-normal" ]
                                         [ Html.label [ class "label" ] [ text "Name" ]
