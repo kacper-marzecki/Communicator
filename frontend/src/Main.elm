@@ -863,7 +863,7 @@ loginView model =
             [ div [ class "column is-4 is-offset-4" ]
                 [ div [ class "box box-center" ]
                     [ Html.figure [ class "avatar" ]
-                        [ img [ src "https://placehold.it/128x128" ] []
+                        [ img [ src "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=H+I&size=128x128" ] []
                         ]
                     , div [ class "field" ]
                         [ div [ class "control " ]
@@ -918,7 +918,7 @@ registrationView model =
             [ div [ class "column is-4 is-offset-4" ]
                 [ div [ class "box" ]
                     [ Html.figure [ class "avatar" ]
-                        [ img [ src "https://placehold.it/128x128" ] []
+                        [ img [ src "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=H+I&size=128x128" ] []
                         ]
                     , div [ class "field" ]
                         [ div [ class "control " ]
@@ -1063,7 +1063,7 @@ messageView message =
     Html.article [ class "media" ]
         [ Html.figure [ class "media-left" ]
             [ Html.p [ class "image is-64x64" ]
-                [ img [ src "https://bulma.io/images/placeholders/128x128.png" ] []
+                [ img [ src <| "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=" ++ message.username ++ "&size=128x128" ] []
                 ]
             ]
         , div [ class "media-content", Html.Attributes.style "overflow-x" "unset" ]
@@ -1094,6 +1094,14 @@ messageView message =
 messageInputView : List Message -> ConversationViewFormState -> Model -> Html Msg
 messageInputView messages formState model =
     let
+        username =
+            case model.user of
+                Just user ->
+                    user.username
+
+                Nothing ->
+                    ""
+
         isButtonDisabled =
             Utils.isNothing model.chosenChannel
 
@@ -1107,7 +1115,7 @@ messageInputView messages formState model =
     Html.article [ class "media" ]
         [ Html.figure [ class "media-left" ]
             [ Html.p [ class "image is-64x64" ]
-                [ img [ src "https://bulma.io/images/placeholders/128x128.png" ]
+                [ img [ src <| "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=" ++ username ++ "&size=128x128" ]
                     []
                 ]
             ]
@@ -1127,7 +1135,7 @@ messageInputView messages formState model =
                 [ div [ class "level-left" ]
                     [ div [ class "level-item" ]
                         [ Html.button
-                            [ class "button is-primary"
+                            [ class "button is-primary is-mobile-fullwidth"
                             , Html.Attributes.disabled isButtonDisabled
                             , onClick (GotConversationViewMsg SendClicked)
                             ]

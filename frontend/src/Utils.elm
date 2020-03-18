@@ -101,7 +101,7 @@ dateStringFromEpochSecondsmessage seconds =
             String.fromInt <| Time.toHour zone time
 
         minute =
-            String.fromInt <| Time.toMillis zone time
+            String.fromInt <| Time.toMinute zone time
 
         second =
             String.fromInt <| Time.toSecond zone time

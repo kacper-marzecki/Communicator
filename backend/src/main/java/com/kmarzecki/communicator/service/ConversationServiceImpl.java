@@ -64,17 +64,19 @@ public class ConversationServiceImpl implements ConversationService {
                 .oneOnOne(usernames.size() == 2)
                 .users(users)
                 .build());
-        messagingTemplate.convertAndSendToUser(
-                creator.getName(),
-                CHANNELS_TOPIC,
-                map(entity));
+        usernames.forEach(username -> {
+            messagingTemplate.convertAndSendToUser(
+                    username,
+                    CHANNELS_TOPIC,
+                    map(entity));
+        });
+
     }
 
     @Override
     public void message(String from, MessageRequest request) {
         ChannelEntity channelEntity = channelRepository.getOne(request.getChannelId());
         UserEntity userEntity = userRepository.findByUsername(from);
-
         MessageEntity message = MessageEntity.builder()
                 .channelId(request.getChannelId())
                 .user(userEntity)

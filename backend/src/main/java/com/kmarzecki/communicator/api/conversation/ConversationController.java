@@ -60,9 +60,9 @@ public class ConversationController {
     @PostMapping("/message")
     public void message(
             @Valid
-            @RequestBody
-                    MessageRequest request,
-            Principal principal) {
+            @RequestBody MessageRequest request,
+            Principal principal
+    ) {
         conversationService.message(principal.getName(), request);
     }
 
