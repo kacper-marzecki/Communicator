@@ -3,6 +3,7 @@ module Utils exposing (..)
 import Html exposing (..)
 import Html.Events exposing (keyCode)
 import Json.Decode as Json
+import Regex as Regex
 import Time
 
 
@@ -109,6 +110,30 @@ dateStringFromEpochSecondsmessage seconds =
     String.join "." [ year, month, day ] ++ "  " ++ String.join ":" [ hour, minute, second ]
 
 
+and : Bool -> Bool -> Bool
+and a b =
+    a && b
+
+
+anyTrue : a -> List (a -> Bool) -> Bool
+anyTrue checked predicates =
+    let
+        check pred acc =
+            pred checked || acc
+    in
+    List.foldl check False predicates
+
+
+startsLikeALink : String -> Bool
+startsLikeALink m =
+    anyTrue m [ String.startsWith "http", String.startsWith "https", String.startsWith "www" ]
+
+
+isLink : String -> Bool
+isLink m =
+    (String.split m " " |> List.length) == 1 && startsLikeALink m
+
+
 equal : Maybe a -> a -> Bool
 equal maybe other =
     case maybe of
@@ -135,6 +160,40 @@ onEnter msg =
 isJust : Maybe a -> Bool
 isJust m =
     not (isNothing m)
+
+
+createYoutubeEmbeddedLink : String -> Maybe String
+createYoutubeEmbeddedLink link =
+    let
+        ytRegex =
+            "v=.*(?=&)*"
+
+        reg =
+            case Regex.fromString ytRegex of
+                Just m ->
+                    m
+
+                Nothing ->
+                    Regex.never
+    in
+    case List.head (link |> Regex.find reg) of
+        Just match ->
+            let
+                dupa =
+                    match.match
+                        |> String.dropLeft 2
+                        |> (\it ->
+                                if String.endsWith "&" it then
+                                    String.dropRight 1 it
+
+                                else
+                                    it
+                           )
+            in
+            Just <| "//www.youtube.com/embed/" ++ dupa
+
+        _ ->
+            Nothing
 
 
 addIfNotPresent : a -> List a -> List a

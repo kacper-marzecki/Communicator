@@ -15,6 +15,7 @@ import Login exposing (LoginFormState, encodeLoginForm, newLoginForm)
 import Messages exposing (Message, MessagePayload(..), messageDecoder)
 import Page exposing (Page, pageDecoder)
 import Process
+import Regex
 import Registration exposing (RegistrationFormState, encodeRegisterForm, initRegistrationForm)
 import Task
 import Time
@@ -1060,6 +1061,33 @@ newConversationFormView model maybeFormState =
 
 messageView : Message -> Html Msg
 messageView message =
+    let
+        youtubeView link =
+            Html.iframe
+                [ Html.Attributes.attribute "frameborder" "0"
+                , Html.Attributes.attribute "height" "360"
+                , Html.Attributes.id "ytplayer"
+                , src link
+                , Html.Attributes.type_ "text/html"
+                , Html.Attributes.attribute "width" "640"
+                ]
+                []
+
+        linkView link =
+            case Utils.createYoutubeEmbeddedLink link of
+                Just youtubeLink ->
+                    youtubeView youtubeLink
+
+                _ ->
+                    a [ Html.Attributes.href link ] [ text link ]
+
+        messageTextView m =
+            if Utils.isLink m then
+                linkView m
+
+            else
+                text m
+    in
     Html.article [ class "media" ]
         [ Html.figure [ class "media-left" ]
             [ Html.p [ class "image is-64x64" ]
@@ -1072,14 +1100,7 @@ messageView message =
                     [ Html.strong [] [ text <| message.username ++ "   " ]
                     , Html.small [] [ text (Utils.dateStringFromEpochSecondsmessage message.timeMillis) ]
                     , Html.br [] []
-                    , text
-                        (case message.payload of
-                            TextMessage p ->
-                                p
-
-                            LinkMessage p ->
-                                p
-                        )
+                    , messageTextView message.payload
                     ]
                 ]
             , Html.nav [ class "level is-mobile" ]

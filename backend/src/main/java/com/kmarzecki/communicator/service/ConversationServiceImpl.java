@@ -131,7 +131,6 @@ public class ConversationServiceImpl implements ConversationService {
         return MessageResponse.builder()
                 .id(entity.getId())
                 .channelId(entity.getChannelId())
-                .messageType(MessageType.TEXT_MESSAGE)
                 .payload(entity.getPayload())
                 .time(entity.getTime().toEpochSecond(ZoneOffset.ofTotalSeconds(0)))
                 .username(entity.getUser().getUsername())

@@ -10,7 +10,6 @@ import lombok.Value;
 @AllArgsConstructor
 public class MessageResponse {
     Integer id;
-    MessageType messageType;
     Integer channelId;
     String payload;
     String username;
