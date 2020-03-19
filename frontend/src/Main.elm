@@ -627,7 +627,11 @@ conversationUpdate msg model state =
         SendClicked ->
             case model.chosenChannel of
                 Just id ->
-                    ( model, sendMessage state.messageInput id model )
+                    let
+                        newState =
+                            { state | messageInput = "" }
+                    in
+                    ( { model | form = Just <| ConversationViewForm newState }, sendMessage state.messageInput id model )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -1079,7 +1083,7 @@ messageView message =
                     youtubeView youtubeLink
 
                 _ ->
-                    a [ Html.Attributes.href link ] [ text link ]
+                    a [ Html.Attributes.href <| "//" ++ link ] [ text link ]
 
         messageTextView m =
             if Utils.isLink m then
@@ -1146,6 +1150,7 @@ messageInputView messages formState model =
                     [ Html.textarea
                         [ class "is-fullwidth input"
                         , Html.Attributes.placeholder "Message content"
+                        , Html.Attributes.value formState.messageInput
                         , onInput (GotConversationViewMsg << MessageInput)
                         , enterHandler
                         ]
@@ -1203,7 +1208,7 @@ conversationView model =
 
         messageTiles =
             if List.isEmpty model.messages then
-                [ text "No messages :(" ]
+                [ text "Select or create a conversation" ]
 
             else
                 previousMessageIndicator

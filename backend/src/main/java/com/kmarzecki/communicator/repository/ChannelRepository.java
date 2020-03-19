@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.repository;
 
-import com.kmarzecki.communicator.model.ChannelEntity;
+import com.kmarzecki.communicator.model.conversation.ChannelEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

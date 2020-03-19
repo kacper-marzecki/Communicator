@@ -2,10 +2,9 @@ package com.kmarzecki.communicator.api.conversation;
 
 import com.kmarzecki.communicator.service.ConversationService;
 import com.kmarzecki.communicator.service.FriendsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -13,24 +12,16 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
-import static com.kmarzecki.communicator.util.MessageUtils.CHANNELS_TOPIC;
 import static com.kmarzecki.communicator.util.MessageUtils.FRIENDS_TOPIC;
 
 @RestController
 @RequestMapping("/conversation")
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true", allowedHeaders = "*")
+@AllArgsConstructor
 public class ConversationController {
-
-    /**
-     * get my conversations
-     * non paginated
-     */
-    @Autowired
-    private SimpMessageSendingOperations messagingTemplate;
-    @Autowired
-    private ConversationService conversationService;
-    @Autowired
-    private FriendsService friendsService;
+    private final SimpMessageSendingOperations messagingTemplate;
+    private final ConversationService conversationService;
+    private final FriendsService friendsService;
 
     @MessageMapping("/get_channels")
     public void getChannels(Principal principal) {
@@ -83,12 +74,6 @@ public class ConversationController {
     ) {
         conversationService.getPreviousMessages(principal.getName(), channelId, LocalDateTime.ofEpochSecond(before, 0, ZoneOffset.ofTotalSeconds(0)));
     }
-
-    /**    create conversation
-     *  with one person
-     *  with multiple people
-     *?  adding a person to a conversation is verboten/enabled
-     */
 
     //?? hide Conversation
 }

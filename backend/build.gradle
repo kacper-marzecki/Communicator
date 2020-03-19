@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.kmarzecki'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+sourceCompatibility = '1.8'
 
 configurations {
 	developmentOnly
@@ -23,18 +23,33 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // general dependencies
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'io.jsonwebtoken:jjwt:0.9.1'
+
+    // sprin utilities
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // db
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'com.h2database:h2'
+    // implementation 'org.postgresql:postgresql'
+
+    // security
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // web interface
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	implementation 'org.springframework.security:spring-security-messaging'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-//	implementation 'com.h2database:h2'
-	implementation 'io.jsonwebtoken:jjwt:0.9.1'
-	implementation 'org.postgresql:postgresql'
-	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	annotationProcessor 'org.projectlombok:lombok'
+
+    // messaging
+    implementation 'org.springframework.security:spring-security-messaging'
+
+    // dev dependencies
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // test dependencies
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}

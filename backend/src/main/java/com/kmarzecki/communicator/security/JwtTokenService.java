@@ -1,55 +1,42 @@
 package com.kmarzecki.communicator.security;
 
-import java.util.*;
-
-import javax.annotation.PostConstruct;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-
-import com.kmarzecki.communicator.model.Role;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import com.kmarzecki.communicator.model.auth.Role;
+import com.kmarzecki.communicator.util.DateTimeProvider;
+import io.jsonwebtoken.*;
+import lombok.AllArgsConstructor;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import javax.servlet.http.HttpServletRequest;
+import java.util.Base64;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Set;
 
 @Component
+@AllArgsConstructor
 public class JwtTokenService {
-    private static final String ROLES = "roles";
-    private static final String AUTHORIZATION = "Authorization";
-    private static final String BEARER = "Bearer ";
-    @Value("${security.jwt.token.secret-key:secret}")
-    private String secretKey = "secret";
-
-    @Value("${security.jwt.token.expire-length:3600000}")
-    private long validityInMilliseconds = 3600000; // 1h
-
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-    @PostConstruct
-    protected void init() {
-        secretKey = Base64.getEncoder().encodeToString(secretKey.getBytes());
-    }
+    private static final String ROLES = "BASIC_ROLE";
+    private static final String SECRET_KEY = "NON_SAFE_SECRET";
+    private static final String ENCODED_SECRET_KEY = Base64.getEncoder().encodeToString(SECRET_KEY.getBytes());
+    private static final String TOKEN_HEADER_NAME = "token";
+    private static final int VALID_TIME_MS = 3600000;
+    private final CustomUserDetailsService userDetailsService;
+    private final DateTimeProvider dateProvider;
 
     public String createToken(String username, Set<Role> set) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put(ROLES, set);
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
+        Date now = dateProvider.getPresentDate();
+        Date validity = new Date(now.getTime() + VALID_TIME_MS);
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .signWith(SignatureAlgorithm.HS256, ENCODED_SECRET_KEY)
                 .compact();
     }
 
@@ -59,20 +46,20 @@ public class JwtTokenService {
     }
 
     public String getUsername(String token) {
-        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
+        return Jwts.parser().setSigningKey(ENCODED_SECRET_KEY).parseClaimsJws(token).getBody().getSubject();
     }
 
     public String extractToken(HttpServletRequest req) {
-        return req.getHeader("token");
+        return req.getHeader(TOKEN_HEADER_NAME);
     }
 
     public String extractToken(StompHeaderAccessor accessor) {
-        return accessor.getNativeHeader("token").get(0);
+        return Objects.requireNonNull(accessor.getNativeHeader(TOKEN_HEADER_NAME)).get(0);
     }
 
     public boolean validateToken(String token) {
         try {
-            Jws<Claims> claims = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            Jws<Claims> claims = Jwts.parser().setSigningKey(ENCODED_SECRET_KEY).parseClaimsJws(token);
             return !claims.getBody().getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
             throw new JwtException("Expired or invalid JWT token");

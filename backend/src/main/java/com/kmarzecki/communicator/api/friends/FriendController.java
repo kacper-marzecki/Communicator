@@ -1,7 +1,7 @@
 package com.kmarzecki.communicator.api.friends;
 
 import com.kmarzecki.communicator.service.FriendsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -10,9 +10,9 @@ import java.security.Principal;
 @RestController
 @RequestMapping("/friends")
 @CrossOrigin(origins = "http://localhost:3000",allowCredentials = "true", allowedHeaders = "*")
+@AllArgsConstructor
 public class FriendController {
-    @Autowired
-    FriendsService friendsService;
+    private final FriendsService friendsService;
 
     @PostMapping
     public void addFriend(

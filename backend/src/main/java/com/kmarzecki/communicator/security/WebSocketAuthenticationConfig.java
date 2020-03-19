@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -15,14 +15,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+import java.util.Optional;
+
 @Configuration
 @EnableWebSocketMessageBroker
 @Order(Ordered.HIGHEST_PRECEDENCE + 99)
+@AllArgsConstructor
 public class WebSocketAuthenticationConfig implements WebSocketMessageBrokerConfigurer {
-    @Autowired
-    private JwtTokenService tokenService;
-//    @Autowired
-//    private JwtDecoder jwtDecoder;
+    private final JwtTokenService tokenService;
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
@@ -31,12 +31,9 @@ public class WebSocketAuthenticationConfig implements WebSocketMessageBrokerConf
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor =
                         MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     String accessToken = tokenService.extractToken(accessor);
                     Authentication authentication = tokenService.getAuthentication(accessToken);
-//                    Jwt jwt = jwtDecoder.decode(accessToken);
-//                    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-//                    Authentication authentication = converter.convert(jwt);
                     accessor.setUser(authentication);
                 }
                 return message;

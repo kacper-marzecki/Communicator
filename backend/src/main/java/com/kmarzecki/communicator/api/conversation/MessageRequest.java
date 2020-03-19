@@ -3,18 +3,23 @@ package com.kmarzecki.communicator.api.conversation;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 /**
- * Request użytkownika zawierający wysłaną wiadomość
+ * User request containing the message
  */
 @Getter
 @Setter
 public class MessageRequest {
     /**
-     * Id klanału do którego kierowana jest ta wiadomość
+     * Id of the channel the message is sent to
      */
-    private int channelId;
+    @NotNull
+    private Integer channelId;
     /**
-     * Zawartość wiadomości
+     * Message payload
      */
+    @NotBlank
     private String payload;
 }

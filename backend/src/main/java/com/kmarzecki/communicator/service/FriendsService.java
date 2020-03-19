@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.service;
 
-import com.kmarzecki.communicator.model.FriendshipResponse;
+import com.kmarzecki.communicator.model.friends.FriendshipResponse;
 
 import java.security.Principal;
 import java.util.List;

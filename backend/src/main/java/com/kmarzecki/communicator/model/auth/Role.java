@@ -1,4 +1,4 @@
-package com.kmarzecki.communicator.model;
+package com.kmarzecki.communicator.model.auth;
 
 import lombok.Getter;
 import lombok.Setter;

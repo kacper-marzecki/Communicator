@@ -1,5 +1,6 @@
-package com.kmarzecki.communicator.model;
+package com.kmarzecki.communicator.model.conversation;
 
+import com.kmarzecki.communicator.model.auth.UserEntity;
 import lombok.*;
 
 import javax.persistence.*;

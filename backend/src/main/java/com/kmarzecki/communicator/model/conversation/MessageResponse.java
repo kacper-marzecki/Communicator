@@ -1,8 +1,7 @@
-package com.kmarzecki.communicator.model;
+package com.kmarzecki.communicator.model.conversation;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @Value

@@ -1,23 +1,25 @@
 package com.kmarzecki.communicator.security;
 
+import com.kmarzecki.communicator.model.auth.UserResponse;
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
-import com.kmarzecki.communicator.model.*;
+import com.kmarzecki.communicator.model.auth.LoginDto;
+import com.kmarzecki.communicator.model.auth.LoginResponse;
+import com.kmarzecki.communicator.model.auth.RegisterDto;
 import com.kmarzecki.communicator.repository.UserRepository;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
-import static org.springframework.http.ResponseEntity.ok;
+import java.security.Principal;
 
 @Service
-@AllArgsConstructor(onConstructor = @__(@Autowired) )
+@AllArgsConstructor
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
-    private CustomUserDetailsService userService;
-    JwtTokenService jwtTokenService;
-    AuthenticationManager authenticationManager;
+    private final JwtTokenService jwtTokenService;
+    private final AuthenticationManager authenticationManager;
+    private final CustomUserDetailsService userService;
 
     @Override
     public LoginResponse login(LoginDto dto) {
@@ -35,5 +37,10 @@ public class AuthServiceImpl implements AuthService {
             throw new OperationNotPermittedException("User: " + dto.getUsername() + " exists");
         }
         userService.saveUser(dto);
+    }
+
+    @Override
+    public UserResponse getMe(Principal principal) {
+        return new UserResponse(principal.getName());
     }
 }

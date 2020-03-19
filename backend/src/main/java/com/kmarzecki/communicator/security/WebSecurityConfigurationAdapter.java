@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.security;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,12 +18,11 @@ import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
+@AllArgsConstructor
 public class WebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapter {
     private static final String UNAUTHORIZED = "Unauthorized";
-    @Autowired
-    JwtTokenService jwtTokenService;
-    @Autowired
-    CustomUserDetailsService userDetailsService;
+    private final JwtTokenService jwtTokenService;
+    private final CustomUserDetailsService userDetailsService;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {

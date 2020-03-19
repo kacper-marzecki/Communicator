@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.repository;
 
-import com.kmarzecki.communicator.model.UserEntity;
+import com.kmarzecki.communicator.model.auth.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

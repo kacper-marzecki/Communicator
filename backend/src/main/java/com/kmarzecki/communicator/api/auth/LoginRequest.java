@@ -2,7 +2,6 @@ package com.kmarzecki.communicator.api.auth;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotBlank;
 

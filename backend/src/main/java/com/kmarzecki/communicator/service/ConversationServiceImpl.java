@@ -2,11 +2,16 @@ package com.kmarzecki.communicator.service;
 
 import com.kmarzecki.communicator.api.conversation.MessageRequest;
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
-import com.kmarzecki.communicator.model.*;
+import com.kmarzecki.communicator.model.auth.UserEntity;
+import com.kmarzecki.communicator.model.conversation.ChannelEntity;
+import com.kmarzecki.communicator.model.conversation.ChannelListResponse;
+import com.kmarzecki.communicator.model.conversation.MessageEntity;
+import com.kmarzecki.communicator.model.conversation.MessageResponse;
 import com.kmarzecki.communicator.repository.ChannelRepository;
 import com.kmarzecki.communicator.repository.MessageRepository;
 import com.kmarzecki.communicator.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.kmarzecki.communicator.util.DateTimeProvider;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,33 +28,27 @@ import static com.kmarzecki.communicator.util.CollectionUtils.mapList;
 import static com.kmarzecki.communicator.util.MessageUtils.*;
 
 @Service
-public class ConversationServiceImpl implements ConversationService {
-    @Autowired
-    ChannelRepository channelRepository;
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    private SimpMessageSendingOperations messagingTemplate;
-    @Autowired
-    MessageRepository messageRepository;
-    @Autowired
-    private TimeProvider timeProvider;
-    @Override
+@AllArgsConstructor
+class ConversationServiceImpl implements ConversationService {
+    private final ChannelRepository channelRepository;
+    private final UserRepository userRepository;
+    private final SimpMessageSendingOperations messagingTemplate;
+    private final MessageRepository messageRepository;
+    private final DateTimeProvider dateTimeProvider;
+
     public void getUserChannels(Principal principal) {
         mapList(this::map,
                 channelRepository.findAllByUsers_Username(principal.getName())
-        ).forEach(c -> {
-            messagingTemplate.convertAndSendToUser(
-                    principal.getName(),
-                    CHANNELS_TOPIC,
-                    c);
-        });
+        ).forEach(c -> messagingTemplate.convertAndSendToUser(
+                principal.getName(),
+                CHANNELS_TOPIC,
+                c));
     }
 
     @Override
     public void createChannel(String name, Set<String> usernames, Principal creator) {
         usernames.add(creator.getName());
-        var users = userRepository.findAllByUsernameIn(usernames);
+        Set<UserEntity> users = userRepository.findAllByUsernameIn(usernames);
         if (users.size() != usernames.size()) {
             sendError(messagingTemplate, creator.getName(), "Cannot find all requested users");
             throw new OperationNotPermittedException();
@@ -59,17 +58,15 @@ public class ConversationServiceImpl implements ConversationService {
             throw new OperationNotPermittedException();
         }
 
-        var entity = channelRepository.save(ChannelEntity.builder()
+        ChannelEntity entity = channelRepository.save(ChannelEntity.builder()
                 .name(name)
                 .oneOnOne(usernames.size() == 2)
                 .users(users)
                 .build());
-        usernames.forEach(username -> {
-            messagingTemplate.convertAndSendToUser(
-                    username,
-                    CHANNELS_TOPIC,
-                    map(entity));
-        });
+        usernames.forEach(username -> messagingTemplate.convertAndSendToUser(
+                username,
+                CHANNELS_TOPIC,
+                map(entity)));
 
     }
 
@@ -81,16 +78,14 @@ public class ConversationServiceImpl implements ConversationService {
                 .channelId(request.getChannelId())
                 .user(userEntity)
                 .payload(request.getPayload())
-                .time(timeProvider.now())
+                .time(dateTimeProvider.now())
                 .build();
         MessageResponse response = map(messageRepository.save(message));
-        channelEntity.getUsers().forEach(user -> {
-            messagingTemplate.convertAndSendToUser(
-                    user.getUsername(),
-                    MESSAGES_TOPIC,
-                    response
-                    );
-        });
+        channelEntity.getUsers().forEach(user -> messagingTemplate.convertAndSendToUser(
+                user.getUsername(),
+                MESSAGES_TOPIC,
+                response
+                ));
     }
 
     @Override
@@ -101,13 +96,11 @@ public class ConversationServiceImpl implements ConversationService {
         }
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "time"));
         List<MessageEntity> messages = messageRepository.findAllByChannelId(channelId, pageable);
-        messages.forEach(m -> {
-            messagingTemplate.convertAndSendToUser(
-                    user,
-                    MESSAGES_TOPIC,
-                    map(m)
-            );
-        });
+        messages.forEach(m -> messagingTemplate.convertAndSendToUser(
+                user,
+                MESSAGES_TOPIC,
+                map(m)
+        ));
     }
 
     @Override
@@ -118,13 +111,11 @@ public class ConversationServiceImpl implements ConversationService {
         }
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "time"));
         List<MessageEntity> messages = messageRepository.findAllByChannelIdAndTimeBefore(channelId, time, pageable);
-        messages.forEach(m -> {
-            messagingTemplate.convertAndSendToUser(
-                    user,
-                    PREVIOUS_MESSAGES_TOPIC,
-                    map(m)
-            );
-        });
+        messages.forEach(m -> messagingTemplate.convertAndSendToUser(
+                user,
+                PREVIOUS_MESSAGES_TOPIC,
+                map(m)
+        ));
     }
 
     private MessageResponse map(MessageEntity entity) {

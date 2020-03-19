@@ -1,15 +1,14 @@
 package com.kmarzecki.communicator.service;
 
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
-import com.kmarzecki.communicator.model.FriendshipEntity;
-import com.kmarzecki.communicator.model.FriendshipResponse;
+import com.kmarzecki.communicator.model.friends.FriendshipEntity;
+import com.kmarzecki.communicator.model.friends.FriendshipResponse;
 import com.kmarzecki.communicator.repository.FriendshipRepository;
-import com.kmarzecki.communicator.repository.UserRepository;
 import com.kmarzecki.communicator.security.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
 import java.util.List;
@@ -18,18 +17,16 @@ import java.util.stream.Collectors;
 import static com.kmarzecki.communicator.util.MessageUtils.*;
 
 @Service
-public class FriendsServiceImpl implements FriendsService {
-    @Autowired
-    FriendshipRepository friendshipRepository;
-    @Autowired
-    CustomUserDetailsService userService;
-    @Autowired
-    private SimpMessageSendingOperations messagingTemplate;
+@AllArgsConstructor
+class FriendsServiceImpl implements FriendsService {
+    private final FriendshipRepository friendshipRepository;
+    private final CustomUserDetailsService userService;
+    private final SimpMessageSendingOperations messagingTemplate;
 
 
     @Override
     public List<FriendshipResponse> getFriendsFor(Principal principal) {
-        var user = principal.getName();
+        String user = principal.getName();
         return friendshipRepository.findAllByRequesterEqualsOrTargetEquals(user, user)
                 .stream()
                 .map(this::map)
@@ -37,6 +34,7 @@ public class FriendsServiceImpl implements FriendsService {
     }
 
     @Override
+    @Transactional
     public void addFriend(String requester, String target) {
         if (!userService.existsByUsername(target)) {
             sendError(messagingTemplate, requester, "Such user does not exist");
@@ -51,14 +49,14 @@ public class FriendsServiceImpl implements FriendsService {
             sendError(messagingTemplate, requester, "How would You like to be Your own best friend ? :)");
             return;
         }
-        var saved = friendshipRepository.save(FriendshipEntity.builder()
+        FriendshipEntity saved = friendshipRepository.save(FriendshipEntity.builder()
                 .requester(requester)
                 .target(target)
                 .pending(true)
                 .build()
         );
         sendFriendshipNotification(requester, saved);
-        sendFriendshipNotification(target,  saved);
+        sendFriendshipNotification(target, saved);
     }
 
     @Override
@@ -71,7 +69,7 @@ public class FriendsServiceImpl implements FriendsService {
     }
 
     private void declineFriendshipRequest(Principal principal, Integer id) {
-        var request = getFriendShipRequestOrThrow(id);
+        FriendshipEntity request = getFriendShipRequestOrThrow(id);
         if (!principal.getName().equals(request.getTarget())) {
             throw new OperationNotPermittedException("Cannot decline someone else's request");
         }
@@ -82,20 +80,12 @@ public class FriendsServiceImpl implements FriendsService {
 
     private void sendFriendshipDeletedNotification(Integer id, String... users) {
         for (String user : users) {
-            messagingTemplate.convertAndSendToUser(
-                    user
-                    , DELETED_FRIENDS_TOPIC
-                    , id
-            );
+            messagingTemplate.convertAndSendToUser(user , DELETED_FRIENDS_TOPIC , id);
         }
     }
 
     private void sendFriendshipNotification(String user, FriendshipEntity entity) {
-        messagingTemplate.convertAndSendToUser(
-                user
-                , FRIENDS_TOPIC
-                , map(entity)
-        );
+        messagingTemplate.convertAndSendToUser(user, FRIENDS_TOPIC, map(entity));
     }
 
     private FriendshipEntity getFriendShipRequestOrThrow(Integer id) {
@@ -104,7 +94,7 @@ public class FriendsServiceImpl implements FriendsService {
     }
 
     private void acceptFriendshipRequest(Principal principal, Integer id) {
-        var request = getFriendShipRequestOrThrow(id);
+        FriendshipEntity request = getFriendShipRequestOrThrow(id);
         if (!principal.getName().equals(request.getTarget())) {
             throw new OperationNotPermittedException("Cannot Accept someone else's request");
         }

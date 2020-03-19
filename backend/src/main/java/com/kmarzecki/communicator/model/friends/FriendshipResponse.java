@@ -1,4 +1,4 @@
-package com.kmarzecki.communicator.model;
+package com.kmarzecki.communicator.model.friends;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,4 +1,4 @@
-package com.kmarzecki.communicator.api.auth;
+package com.kmarzecki.communicator.model.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

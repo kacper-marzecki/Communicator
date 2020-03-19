@@ -6,16 +6,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class CollectionUtils {
+    @SafeVarargs
     public static <T> Set<T> asSet(T... xs) {
         return Arrays.stream(xs).collect(Collectors.toSet());
     }
 
-    public static <T> List<T> asList(T... xs) {
-        return Arrays.stream(xs).collect(Collectors.toList());
-    }
-
+    @SafeVarargs
     public static <K, V> Map<K, V> asMap(Function<V, K> keyMapper, V... xs) {
-        var map = new HashMap<K, V>();
+        HashMap<K, V> map = new HashMap<>();
         Arrays.stream(xs)
                 .forEach((x) -> map.put(keyMapper.apply(x), x));
         return map;

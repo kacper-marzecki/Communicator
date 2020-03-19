@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.repository;
 
-import com.kmarzecki.communicator.model.MessageEntity;
+import com.kmarzecki.communicator.model.conversation.MessageEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 

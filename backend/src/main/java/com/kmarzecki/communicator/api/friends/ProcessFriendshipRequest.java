@@ -6,5 +6,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ProcessFriendshipRequest {
-    boolean accept;
+    private boolean accept;
 }

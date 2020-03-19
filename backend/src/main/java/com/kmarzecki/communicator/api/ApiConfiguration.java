@@ -2,7 +2,7 @@ package com.kmarzecki.communicator.api;
 
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
 import com.kmarzecki.communicator.util.MessageUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -15,13 +15,12 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
+@AllArgsConstructor
 public class ApiConfiguration {
-    @Autowired
-    private SimpMessageSendingOperations messagingTemplate;
+    private final SimpMessageSendingOperations messagingTemplate;
 
     @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})
-    public ResponseEntity<?> handleAuthentictionException(Throwable t){
-        System.out.println(t.getMessage());
+    public ResponseEntity<?> handleAuthenticationException(Throwable t){
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 

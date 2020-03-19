@@ -1,10 +1,9 @@
-package com.kmarzecki.communicator.model;
+package com.kmarzecki.communicator.model.conversation;
 
 import lombok.Builder;
 import lombok.Value;
 
 import java.util.List;
-import java.util.Set;
 
 @Value
 @Builder

@@ -1,12 +1,10 @@
-package com.kmarzecki.communicator.model;
+package com.kmarzecki.communicator.model.auth;
 
-
-
-import java.util.Set;
 
 import lombok.*;
 
 import javax.persistence.*;
+import java.util.Set;
 
 
 @Entity

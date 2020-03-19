@@ -1,6 +1,6 @@
 package com.kmarzecki.communicator.repository;
 
-import com.kmarzecki.communicator.model.FriendshipEntity;
+import com.kmarzecki.communicator.model.friends.FriendshipEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
