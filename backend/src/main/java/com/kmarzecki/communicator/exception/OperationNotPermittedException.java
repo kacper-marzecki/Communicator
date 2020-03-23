@@ -4,6 +4,9 @@ import lombok.Getter;
 
 import java.util.Optional;
 
+/**
+ * Exception indicating that user attempted an operation which is not permitted
+ */
 @Getter
 public class OperationNotPermittedException extends RuntimeException {
     private Optional<String> user = Optional.empty();

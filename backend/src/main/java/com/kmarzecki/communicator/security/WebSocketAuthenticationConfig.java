@@ -15,8 +15,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import java.util.Optional;
-
+/**
+ * WebSocket authentication configuration
+ * Responsible for settings up authentication of websocket connections
+ */
 @Configuration
 @EnableWebSocketMessageBroker
 @Order(Ordered.HIGHEST_PRECEDENCE + 99)

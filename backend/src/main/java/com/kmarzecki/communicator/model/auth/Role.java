@@ -7,13 +7,22 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+/**
+ * Entity representing user role
+ */
 @Entity
 @Getter
 @Setter
 public class Role {
+    /**
+     * Role id
+     */
     @Id
     @GeneratedValue
     private String id;
-    private String role;
+    /**
+     * Role name
+     */
+    private String name;
 }
 

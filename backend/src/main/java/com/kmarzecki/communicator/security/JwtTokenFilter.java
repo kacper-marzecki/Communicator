@@ -12,6 +12,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
+/**
+ * Filter that authenticates requests based on JWT
+ */
 public class JwtTokenFilter extends GenericFilterBean {
 
     private final JwtTokenService jwtTokenService;

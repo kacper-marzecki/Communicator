@@ -2,18 +2,38 @@ package com.kmarzecki.communicator.api.friends;
 
 import com.kmarzecki.communicator.service.FriendsService;
 import lombok.AllArgsConstructor;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.security.Principal;
 
+/**
+ * Controller for operations concerning friends and friendships
+ */
 @RestController
 @RequestMapping("/friends")
 @CrossOrigin(origins = "http://localhost:3000",allowCredentials = "true", allowedHeaders = "*")
 @AllArgsConstructor
 public class FriendController {
     private final FriendsService friendsService;
+    private final SimpMessageSendingOperations messagingTemplate;
 
+    /**
+     * Get Friends of the requesting user
+     * @param principal Principal of the requesting user
+     */
+    @MessageMapping("/get_friends")
+    public void getFriends(Principal principal) {
+        friendsService.getFriendsFor(principal);
+    }
+
+    /**
+     * Add a friend
+     * @param request Request containing data for a adding a friend
+     * @param principal Principal of the requesting user
+     */
     @PostMapping
     public void addFriend(
             @Valid
@@ -23,6 +43,12 @@ public class FriendController {
         friendsService.addFriend(principal.getName(), request.getTarget());
     }
 
+    /**
+     * Respond to a friendship request
+     * @param request Request containing data with a response to a friendship request
+     * @param principal Principal of the requesting user
+     * @param request_id id of the friendship request
+     */
     @PostMapping("/process_request/{id}")
     public void processRequest(
             @Valid
@@ -30,8 +56,8 @@ public class FriendController {
             ProcessFriendshipRequest request,
             Principal principal,
             @PathVariable(name = "id")
-            Integer id
+            Integer request_id
     ) {
-        friendsService.processFriendshipRequest(id, request.isAccept(), principal );
+        friendsService.processFriendshipRequest(request_id, request.isAcceptRequest(), principal );
     }
 }

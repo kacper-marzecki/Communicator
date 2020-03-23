@@ -1,10 +1,10 @@
 package com.kmarzecki.communicator.security;
 
-import com.kmarzecki.communicator.model.auth.UserResponse;
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
 import com.kmarzecki.communicator.model.auth.LoginDto;
 import com.kmarzecki.communicator.model.auth.LoginResponse;
 import com.kmarzecki.communicator.model.auth.RegisterDto;
+import com.kmarzecki.communicator.model.auth.UserResponse;
 import com.kmarzecki.communicator.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,11 +15,11 @@ import java.security.Principal;
 
 @Service
 @AllArgsConstructor
-public class AuthServiceImpl implements AuthService {
+public class AuthenticationServiceImpl implements AuthenticationService {
     private final UserRepository userRepository;
     private final JwtTokenService jwtTokenService;
     private final AuthenticationManager authenticationManager;
-    private final CustomUserDetailsService userService;
+    private final UserDetailsServiceImpl userService;
 
     @Override
     public LoginResponse login(LoginDto dto) {

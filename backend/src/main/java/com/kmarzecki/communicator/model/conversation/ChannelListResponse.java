@@ -12,5 +12,4 @@ public class ChannelListResponse {
     String name;
     List<String> users;
     Long createTime;
-    boolean oneOnOne;
 }

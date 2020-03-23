@@ -46,28 +46,26 @@ class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public void createChannel(String name, Set<String> usernames, Principal creator) {
+    public void createChannel(String channelName, Set<String> usernames, Principal creator) {
         usernames.add(creator.getName());
         Set<UserEntity> users = userRepository.findAllByUsernameIn(usernames);
         if (users.size() != usernames.size()) {
             sendError(messagingTemplate, creator.getName(), "Cannot find all requested users");
             throw new OperationNotPermittedException();
         }
-        if (channelRepository.existsByNameAndUsers_UsernameIn(name, usernames)){
+        if (channelRepository.existsByNameAndUsers_UsernameIn(channelName, usernames)){
             sendError(messagingTemplate, creator.getName(), "Conversation name is not unique");
             throw new OperationNotPermittedException();
         }
 
         ChannelEntity entity = channelRepository.save(ChannelEntity.builder()
-                .name(name)
-                .oneOnOne(usernames.size() == 2)
+                .name(channelName)
                 .users(users)
                 .build());
         usernames.forEach(username -> messagingTemplate.convertAndSendToUser(
                 username,
                 CHANNELS_TOPIC,
                 map(entity)));
-
     }
 
     @Override
@@ -78,7 +76,7 @@ class ConversationServiceImpl implements ConversationService {
                 .channelId(request.getChannelId())
                 .user(userEntity)
                 .payload(request.getPayload())
-                .time(dateTimeProvider.now())
+                .time(dateTimeProvider.currentLocalDateTime())
                 .build();
         MessageResponse response = map(messageRepository.save(message));
         channelEntity.getUsers().forEach(user -> messagingTemplate.convertAndSendToUser(
@@ -103,16 +101,21 @@ class ConversationServiceImpl implements ConversationService {
         ));
     }
 
+
     @Override
-    public void getPreviousMessages(String user, Integer channelId, LocalDateTime time) {
+    public void getPreviousMessages(Principal requester, Integer channelId, Long beforeTime) {
         ChannelEntity channelEntity = channelRepository.getOne(channelId);
-        if(channelEntity.getUsers().stream().noneMatch(u -> u.getUsername().equals(user))) {
+        if(channelEntity.getUsers().stream().noneMatch(u -> u.getUsername().equals(requester.getName()))) {
             throw new OperationNotPermittedException();
         }
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "time"));
-        List<MessageEntity> messages = messageRepository.findAllByChannelIdAndTimeBefore(channelId, time, pageable);
+        List<MessageEntity> messages = messageRepository.findAllByChannelIdAndTimeBefore(
+                channelId,
+                LocalDateTime.ofEpochSecond(beforeTime, 0, ZoneOffset.ofTotalSeconds(0)),
+                pageable
+        );
         messages.forEach(m -> messagingTemplate.convertAndSendToUser(
-                user,
+                requester.getName(),
                 PREVIOUS_MESSAGES_TOPIC,
                 map(m)
         ));
@@ -132,7 +135,6 @@ class ConversationServiceImpl implements ConversationService {
         return ChannelListResponse.builder()
                 .id(c.getId())
                 .name(c.getName())
-                .oneOnOne(c.isOneOnOne())
                 .users(mapList(UserEntity::getUsername, c.getUsers()))
                 .build();
     }

@@ -8,14 +8,20 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 
+/**
+ * Repository configuration
+ */
 @Configuration
 @AllArgsConstructor
 @EnableTransactionManagement
 public class RepositoryConfiguration {
     private final DataSource dataSource;
 
+    /**
+     * @return TransactionManager bean
+     */
     @Bean
-    public DataSourceTransactionManager asd(){
+    public DataSourceTransactionManager transactionManager() {
         return new DataSourceTransactionManager(dataSource);
     }
 }

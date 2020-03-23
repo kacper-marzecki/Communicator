@@ -16,13 +16,16 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import javax.servlet.http.HttpServletResponse;
 
 
+/**
+ * Web security configuration
+ */
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
 public class WebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapter {
     private static final String UNAUTHORIZED = "Unauthorized";
     private final JwtTokenService jwtTokenService;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -40,14 +43,10 @@ public class WebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapte
                     .antMatchers("/api/auth/login").permitAll()
                 .antMatchers("/api/auth/register").permitAll()
                 .antMatchers("/ws_endpoint/**").permitAll()
-                    // TODO remove
-                    .antMatchers("/h2-console/**").permitAll().antMatchers("/api/auth/register").permitAll()
-                    .antMatchers("/api/products/**")
-                        .hasAuthority("ADMIN")
                 .anyRequest().authenticated()
                 .and().csrf().disable()
                 .exceptionHandling().authenticationEntryPoint(unauthorizedEntryPoint())
-                .and().apply(new JwtConfigurer(jwtTokenService));
+                .and().apply(new JwtFilterConfigurer(jwtTokenService));
     }
 
     @Bean

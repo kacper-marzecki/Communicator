@@ -4,40 +4,43 @@ import com.kmarzecki.communicator.exception.OperationNotPermittedException;
 import com.kmarzecki.communicator.model.friends.FriendshipEntity;
 import com.kmarzecki.communicator.model.friends.FriendshipResponse;
 import com.kmarzecki.communicator.repository.FriendshipRepository;
-import com.kmarzecki.communicator.security.CustomUserDetailsService;
+import com.kmarzecki.communicator.security.UserDetailsServiceImpl;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.kmarzecki.communicator.util.MessageUtils.*;
 
 @Service
 @AllArgsConstructor
 class FriendsServiceImpl implements FriendsService {
+    private static final String CANNOT_RESPOND_TO_NOT_OWNED_REQUEST_ERROR = "Cannot respond to someone else's request";
+    private static final String USER_DOESNT_EXIST_ERROR = "Such user does not exist";
+    private static final String REQUEST_DOESNT_EXIST_ERROR = "Such request does not exist";
     private final FriendshipRepository friendshipRepository;
-    private final CustomUserDetailsService userService;
+    private final UserDetailsServiceImpl userService;
     private final SimpMessageSendingOperations messagingTemplate;
 
-
     @Override
-    public List<FriendshipResponse> getFriendsFor(Principal principal) {
+    public void getFriendsFor(Principal principal) {
         String user = principal.getName();
-        return friendshipRepository.findAllByRequesterEqualsOrTargetEquals(user, user)
+        friendshipRepository.findAllByRequesterEqualsOrTargetEquals(user, user)
                 .stream()
                 .map(this::map)
-                .collect(Collectors.toList());
+                .forEach(f -> messagingTemplate.convertAndSendToUser(
+                        principal.getName(),
+                        FRIENDS_TOPIC,
+                        f));
     }
 
     @Override
     @Transactional
     public void addFriend(String requester, String target) {
         if (!userService.existsByUsername(target)) {
-            sendError(messagingTemplate, requester, "Such user does not exist");
+            sendError(messagingTemplate, requester, USER_DOESNT_EXIST_ERROR);
             return;
         }
         if (isFriendOrInProgress(target, requester)
@@ -60,18 +63,18 @@ class FriendsServiceImpl implements FriendsService {
     }
 
     @Override
-    public void processFriendshipRequest(Integer id, boolean accept, Principal principal) {
+    public void processFriendshipRequest(Integer requestId, boolean accept, Principal principal) {
         if (accept) {
-            acceptFriendshipRequest(principal, id);
+            acceptFriendshipRequest(principal, requestId);
         } else {
-            declineFriendshipRequest(principal, id);
+            declineFriendshipRequest(principal, requestId);
         }
     }
 
     private void declineFriendshipRequest(Principal principal, Integer id) {
         FriendshipEntity request = getFriendShipRequestOrThrow(id);
         if (!principal.getName().equals(request.getTarget())) {
-            throw new OperationNotPermittedException("Cannot decline someone else's request");
+            throw new OperationNotPermittedException(CANNOT_RESPOND_TO_NOT_OWNED_REQUEST_ERROR);
         }
         friendshipRepository.delete(request);
         sendFriendshipDeletedNotification(request.getId(), request.getRequester(), request.getTarget());
@@ -80,7 +83,7 @@ class FriendsServiceImpl implements FriendsService {
 
     private void sendFriendshipDeletedNotification(Integer id, String... users) {
         for (String user : users) {
-            messagingTemplate.convertAndSendToUser(user , DELETED_FRIENDS_TOPIC , id);
+            messagingTemplate.convertAndSendToUser(user, DELETED_FRIENDS_TOPIC, id);
         }
     }
 
@@ -88,15 +91,15 @@ class FriendsServiceImpl implements FriendsService {
         messagingTemplate.convertAndSendToUser(user, FRIENDS_TOPIC, map(entity));
     }
 
-    private FriendshipEntity getFriendShipRequestOrThrow(Integer id) {
-        return friendshipRepository.findById(id)
-                .orElseThrow(() -> new OperationNotPermittedException("No such request"));
+    private FriendshipEntity getFriendShipRequestOrThrow(Integer requestId) {
+        return friendshipRepository.findById(requestId)
+                .orElseThrow(() -> new OperationNotPermittedException(REQUEST_DOESNT_EXIST_ERROR));
     }
 
-    private void acceptFriendshipRequest(Principal principal, Integer id) {
-        FriendshipEntity request = getFriendShipRequestOrThrow(id);
+    private void acceptFriendshipRequest(Principal principal, Integer requestId) {
+        FriendshipEntity request = getFriendShipRequestOrThrow(requestId);
         if (!principal.getName().equals(request.getTarget())) {
-            throw new OperationNotPermittedException("Cannot Accept someone else's request");
+            throw new OperationNotPermittedException(CANNOT_RESPOND_TO_NOT_OWNED_REQUEST_ERROR);
         }
         request.setPending(false);
         friendshipRepository.save(request);

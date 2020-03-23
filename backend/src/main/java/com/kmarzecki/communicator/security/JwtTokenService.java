@@ -24,13 +24,13 @@ public class JwtTokenService {
     private static final String ENCODED_SECRET_KEY = Base64.getEncoder().encodeToString(SECRET_KEY.getBytes());
     private static final String TOKEN_HEADER_NAME = "token";
     private static final int VALID_TIME_MS = 3600000;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
     private final DateTimeProvider dateProvider;
 
     public String createToken(String username, Set<Role> set) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put(ROLES, set);
-        Date now = dateProvider.getPresentDate();
+        Date now = dateProvider.currentDate();
         Date validity = new Date(now.getTime() + VALID_TIME_MS);
         return Jwts.builder()
                 .setClaims(claims)

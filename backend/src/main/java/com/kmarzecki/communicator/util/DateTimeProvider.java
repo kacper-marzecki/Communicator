@@ -3,8 +3,17 @@ package com.kmarzecki.communicator.util;
 import java.time.LocalDateTime;
 import java.util.Date;
 
+/**
+ * Provider for time data
+ */
 public interface DateTimeProvider {
-    Date getPresentDate();
+    /**
+     * @return current date
+     */
+    Date currentDate();
 
-    LocalDateTime now();
+    /**
+     * @return current datetime
+     */
+    LocalDateTime currentLocalDateTime();
 }

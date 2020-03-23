@@ -1,25 +1,34 @@
 package com.kmarzecki.communicator.util;
 
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * Collection utilities
+ */
 public class CollectionUtils {
-    @SafeVarargs
-    public static <T> Set<T> asSet(T... xs) {
-        return Arrays.stream(xs).collect(Collectors.toSet());
+
+    /**
+     * Convert an element to a Set of element
+     *
+     * @param x element
+     * @return a set
+     */
+    public static <T> Set<T> asSet(T x) {
+        return Stream.of(x).collect(Collectors.toSet());
     }
 
-    @SafeVarargs
-    public static <K, V> Map<K, V> asMap(Function<V, K> keyMapper, V... xs) {
-        HashMap<K, V> map = new HashMap<>();
-        Arrays.stream(xs)
-                .forEach((x) -> map.put(keyMapper.apply(x), x));
-        return map;
-    }
-
-    public static <T, A> List<A> mapList(Function<T, A> mapper, Collection<T> xs) {
+    /**
+     * @param mapper function A -> B
+     * @param xs     Collection A
+     * @return List of B
+     */
+    public static <A, B> List<B> mapList(Function<A, B> mapper, Collection<A> xs) {
         return xs.stream()
                 .map(mapper)
                 .collect(Collectors.toList());
