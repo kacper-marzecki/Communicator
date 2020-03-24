@@ -18,6 +18,7 @@ import Process
 import Regex
 import Registration exposing (RegistrationFormState, encodeRegisterForm, initRegistrationForm)
 import Task
+import Terms exposing (..)
 import Time
 import User exposing (User, encodeUser, userDecoder)
 import Utils exposing (addIfNotPresent, isNothing, listWithout)
@@ -290,7 +291,9 @@ type Form
 
 
 type alias Model =
-    { site : Site
+    { programFlags : ProgramFlags
+    , language : TermsLanguage
+    , site : Site
     , form : Maybe Form
     , user : Maybe User
     , friends : List Friend
@@ -311,7 +314,9 @@ init : ProgramFlags -> ( Model, Cmd Msg )
 init flags =
     let
         model =
-            { site = MainSite
+            { programFlags = flags
+            , language = PL
+            , site = LoginSite
             , user = Nothing
             , form = Nothing
             , menuOpen = False
@@ -403,6 +408,7 @@ type Msg
     | OpenFriendsSite
     | OpenLoginSite
     | OpenConversationSite
+    | SwitchLanguage
     | SignOutClicked
     | BurgerClicked
     | CopyToClipboard String
@@ -723,6 +729,9 @@ update msg model =
         ( OpenConversationSite, _ ) ->
             ( { model | site = ConversationSite, form = Just (ConversationViewForm initConversationViewForm) }, getChannels () )
 
+        ( SwitchLanguage, _ ) ->
+            ( { model | language = oppositeLanugage model.language }, Cmd.none )
+
         ( CopyToClipboard string, _ ) ->
             ( model, copyToClipboard (E.string string) )
 
@@ -741,7 +750,11 @@ update msg model =
             ( { model | bottomNotification = Nothing }, Cmd.none )
 
         ( SignOutClicked, _ ) ->
-            ( { model | user = Nothing, site = MainSite }, logoutJs () )
+            let
+                newModel =
+                    Tuple.first <| init model.programFlags
+            in
+            ( { newModel | language = model.language }, logoutJs () )
 
         ( Error err, _ ) ->
             ( { model | errors = [ err ] }, Cmd.none )
@@ -757,7 +770,21 @@ menuBar : Model -> Html Msg
 menuBar model =
     nav [ class "navbar is-primary " ]
         [ div [ class "navbar-brand" ]
-            [ Html.a [ class "navbar-item", onClick OpenMainSite ]
+            [ a [ class " navbar-item ", onClick SwitchLanguage ]
+                [ Html.img
+                    [ class "image is-16x16 is-marginless"
+                    , src
+                        (case model.language of
+                            PL ->
+                                "poland.svg"
+
+                            EN ->
+                                "uk.svg"
+                        )
+                    ]
+                    []
+                ]
+            , Html.a [ class "navbar-item", onClick OpenMainSite ]
                 [ i [ class "fas fa-info-circle" ] []
                 ]
             , Html.a [ class "navbar-item", Html.Attributes.classList [ ( "hidden", isNothing model.user ) ], onClick OpenFriendsSite ]
@@ -780,10 +807,10 @@ menuBar model =
             , div [ class "navbar-end" ]
                 [ case model.user of
                     Nothing ->
-                        a [ class "navbar-item", onClick OpenLoginSite ] [ text "Sign In" ]
+                        a [ class "navbar-item", onClick OpenLoginSite ] [ text (getTerms model.language |> .signIn) ]
 
                     Just user ->
-                        a [ class "navbar-item", onClick SignOutClicked ] [ text "Sign Out" ]
+                        a [ class "navbar-item", onClick SignOutClicked ] [ text (getTerms model.language |> .signOut) ]
                 ]
             ]
         ]
@@ -804,32 +831,6 @@ type FavouriteOption
     | FavouriteDisabled
 
 
-messageTile : Html Msg
-messageTile =
-    let
-        imgUrl =
-            "/gumtree.png"
-    in
-    Html.article [ class "media" ]
-        [ Html.figure [ class "media-left" ]
-            [ Html.p [ class "image is-64x64 " ]
-                [ img [ src imgUrl, class "is-marginless is-rounded" ] []
-                ]
-            ]
-        , div [ class "media-content", Html.Attributes.style "overflow-x" "unset" ]
-            [ div [ class "content " ]
-                [ a [ class "has-text-black has-text-weight-light" ] [ text "description" ]
-                ]
-            , Html.nav [ class "level is-mobile" ]
-                [ a [ class "level-item" ]
-                    [ Html.span [ class "icon has-text-grey-lighter fas fa-heart", title "Favourite" ]
-                        []
-                    ]
-                ]
-            ]
-        ]
-
-
 mainView : Html Msg
 mainView =
     Html.section [ class "hero is-primary  is-fullheight" ] []
@@ -839,7 +840,15 @@ footerView : Model -> Html Msg
 footerView model =
     Html.footer [ class "footer p-b-md p-t-md has-background-grey-light" ]
         [ div [ class "content has-text-centered " ]
-            [ Html.p [] [ text "Kacper Marzecki 2020" ]
+            [ Html.p [] [ text "Kacper Marzecki 2020 \n Icons: " ]
+            , div []
+                [ text "Icons made by "
+                , a [ Html.Attributes.href "https://www.flaticon.com/authors/freepik", title "Freepik" ]
+                    [ text "Freepik" ]
+                , text " from "
+                , a [ Html.Attributes.href "https://www.flaticon.com/", title "Flaticon" ]
+                    [ text "www.flaticon.com" ]
+                ]
             , case model.bottomNotification of
                 Just note ->
                     div [ Html.Attributes.id "snackbar", class "show" ]
@@ -862,6 +871,9 @@ loginView model =
 
                 _ ->
                     newLoginForm
+
+        terms =
+            getTerms model.language |> .logInTerms
     in
     div [ class "hero-body", Html.Attributes.style "display" "block" ]
         [ div [ class "container has-text-centered" ]
@@ -874,8 +886,8 @@ loginView model =
                         [ div [ class "control " ]
                             [ input
                                 [ class "input is-large"
-                                , Html.Attributes.attribute "aria-label" "username-input"
-                                , Html.Attributes.placeholder "Username"
+                                , Html.Attributes.attribute "aria-label" terms.username
+                                , Html.Attributes.placeholder terms.username
                                 , onInput (\a -> GotLoginFormMsg (ChangeLogin a))
                                 , Html.Attributes.value formState.login
                                 ]
@@ -886,8 +898,8 @@ loginView model =
                         [ div [ class "control " ]
                             [ input
                                 [ class "input is-large"
-                                , Html.Attributes.placeholder "Password"
-                                , Html.Attributes.attribute "aria-label" "password-input"
+                                , Html.Attributes.placeholder terms.password
+                                , Html.Attributes.attribute "aria-label" terms.password
                                 , Html.Attributes.type_ "password"
                                 , onInput (\a -> GotLoginFormMsg (ChangePassword a))
                                 , Html.Attributes.value formState.password
@@ -896,11 +908,11 @@ loginView model =
                             ]
                         ]
                     , Html.button [ class "button is-block is-info is-large is-fullwidth", onClick (GotLoginFormMsg LoginButtonClicked) ]
-                        [ text "Login "
+                        [ text terms.logIn
                         , i [ class "fas fa-sign-in-alt" ] []
                         ]
                     , Html.button [ class "button is-block is-info is-large is-fullwidth m-t-sm", onClick (GotLoginFormMsg OpenRegistrationSite) ]
-                        [ text "Register "
+                        [ text terms.register
                         , i [ class "fas fa-user-alt" ] []
                         ]
                     ]
@@ -919,6 +931,9 @@ registrationView model =
 
                 _ ->
                     initRegistrationForm
+
+        terms =
+            getTerms model.language |> .registerTerms
     in
     div [ class "hero-body", Html.Attributes.style "display" "block" ]
         [ div [ class "container has-text-centered" ]
@@ -931,7 +946,8 @@ registrationView model =
                         [ div [ class "control " ]
                             [ input
                                 [ class "input is-large"
-                                , Html.Attributes.placeholder "Username"
+                                , Html.Attributes.attribute "aria-label" terms.username
+                                , Html.Attributes.placeholder terms.username
                                 , onInput (GotRegisterFormMsg << ChangeRegisterLogin)
                                 , Html.Attributes.value formState.login
                                 ]
@@ -942,7 +958,8 @@ registrationView model =
                         [ div [ class "control " ]
                             [ input
                                 [ class "input is-large"
-                                , Html.Attributes.placeholder "Password"
+                                , Html.Attributes.attribute "aria-label" terms.password
+                                , Html.Attributes.placeholder terms.password
                                 , Html.Attributes.type_ "password"
                                 , onInput (GotRegisterFormMsg << ChangeRegisterPassword)
                                 , Html.Attributes.value formState.password
@@ -954,7 +971,8 @@ registrationView model =
                         [ div [ class "control " ]
                             [ input
                                 [ class "input is-large"
-                                , Html.Attributes.placeholder "Password"
+                                , Html.Attributes.attribute "aria-label" terms.password
+                                , Html.Attributes.placeholder terms.password
                                 , Html.Attributes.type_ "password"
                                 , onInput (GotRegisterFormMsg << ChangeRegisterRepeatPassword)
                                 , Html.Attributes.value formState.passwordRepeat
@@ -963,7 +981,7 @@ registrationView model =
                             ]
                         ]
                     , Html.button [ class "button is-block is-info is-large is-fullwidth", onClick (GotRegisterFormMsg RegisterButtonClicked) ]
-                        [ text "Register"
+                        [ text terms.register
                         , i [ class "fas fa-sign-in-alt" ] []
                         ]
                     ]
@@ -980,6 +998,9 @@ newConversationFormView model maybeFormState =
 
         Just formState ->
             let
+                terms =
+                    getTerms model.language |> .conversationTerms
+
                 myFriends =
                     getMyFriends model
 
@@ -1005,21 +1026,21 @@ newConversationFormView model maybeFormState =
 
                 friendSelect =
                     if List.isEmpty model.friends then
-                        div [ class "container has-text-danger" ] [ text "No Friends, no messages :(" ]
+                        div [ class "container has-text-danger" ] [ text terms.noFriendsNoMessages ]
 
                     else
                         div [ class "columns is-multiline" ]
                             [ div [ class "column is-full" ]
                                 [ div [ class "field is-horizontal" ]
                                     [ div [ class "field-label is-normal" ]
-                                        [ Html.label [ class "label" ] [ text "Name" ]
+                                        [ Html.label [ class "label" ] [ text terms.name ]
                                         ]
                                     , div [ class "field-body" ]
                                         [ div [ class "field" ]
                                             [ div [ class "control " ]
                                                 [ Html.input
                                                     [ class "input is-pulled-left m-r-sm"
-                                                    , Html.Attributes.placeholder "Conversation name"
+                                                    , Html.Attributes.placeholder terms.conversationName
                                                     , Html.Attributes.value formState.conversationName
                                                     , onInput (GotConversationViewMsg << GotNewConversationFormMsg << ChangeConversationName)
                                                     ]
@@ -1032,9 +1053,9 @@ newConversationFormView model maybeFormState =
                             , div [ class "column is-full" ]
                                 [ div [ class "columns is is-multiline card" ]
                                     [ div [ class "column is-one-second" ]
-                                        (div [ class "column is-full" ] [ text "Click to add:" ] :: myFriendsButtons)
+                                        (div [ class "column is-full" ] [ text terms.clickToAdd ] :: myFriendsButtons)
                                     , div [ class "column is-one-second" ]
-                                        (div [ class "column is-full" ] [ text "Friends in conversation:" ] :: friendsToAddToConversation)
+                                        (div [ class "column is-full" ] [ text terms.friendsInConversation ] :: friendsToAddToConversation)
                                     ]
                                 ]
                             , div [ class "control column is-full" ]
@@ -1043,7 +1064,7 @@ newConversationFormView model maybeFormState =
                                     , Html.Attributes.disabled (List.isEmpty friendsToAddToConversation || String.isEmpty formState.conversationName)
                                     , onClick (GotConversationViewMsg <| GotNewConversationFormMsg <| CreateConversationButtonClicked)
                                     ]
-                                    [ text "Create conversation !" ]
+                                    [ text terms.createConversation ]
                                 ]
                             ]
             in
@@ -1051,7 +1072,7 @@ newConversationFormView model maybeFormState =
                 [ div [ class "modal-background" ] []
                 , div [ class "modal-card" ]
                     [ Html.header [ class "modal-card-head" ]
-                        [ Html.p [ class "modal-card-title" ] [ text "Create new conversation" ]
+                        [ Html.p [ class "modal-card-title" ] [ text terms.newConversation ]
                         , Html.button [ class "modal-close is-large", onClick (GotConversationViewMsg <| GotNewConversationFormMsg <| CloseNewConversationFormView) ] []
                         ]
                     , Html.section [ class "modal-card-body" ]
@@ -1097,7 +1118,7 @@ messageView message =
     Html.article [ class "media" ]
         [ Html.figure [ class "media-left" ]
             [ Html.p [ class "image is-64x64" ]
-                [ img [ src <| "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=" ++ message.username ++ "&size=128x128" ] []
+                [ img [ Html.Attributes.attribute "aria-label" <| "message from " ++ message.username, src <| "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=" ++ message.username ++ "&size=128x128" ] []
                 ]
             ]
         , div [ class "media-content", Html.Attributes.style "overflow-x" "unset" ]
@@ -1121,6 +1142,9 @@ messageView message =
 messageInputView : List Message -> ConversationViewFormState -> Model -> Html Msg
 messageInputView messages formState model =
     let
+        terms =
+            getTerms model.language |> .conversationTerms
+
         username =
             case model.user of
                 Just user ->
@@ -1137,12 +1161,12 @@ messageInputView messages formState model =
                 Utils.onEnter (GotConversationViewMsg SendClicked)
 
             else
-                Html.Attributes.attribute "asd" "asd"
+                Html.Attributes.attribute "x" "x"
     in
     Html.article [ class "media" ]
         [ Html.figure [ class "media-left" ]
             [ Html.p [ class "image is-64x64" ]
-                [ img [ src <| "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=" ++ username ++ "&size=128x128" ]
+                [ img [ Html.Attributes.attribute "aria-hidden" "true", src <| "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=" ++ username ++ "&size=128x128" ]
                     []
                 ]
             ]
@@ -1151,7 +1175,8 @@ messageInputView messages formState model =
                 [ Html.p [ class "control " ]
                     [ Html.textarea
                         [ class "is-fullwidth input"
-                        , Html.Attributes.placeholder "Message content"
+                        , Html.Attributes.attribute "aria-label" terms.messageContent
+                        , Html.Attributes.placeholder terms.messageContent
                         , Html.Attributes.value formState.messageInput
                         , onInput (GotConversationViewMsg << MessageInput)
                         , enterHandler
@@ -1167,7 +1192,7 @@ messageInputView messages formState model =
                             , Html.Attributes.disabled isButtonDisabled
                             , onClick (GotConversationViewMsg SendClicked)
                             ]
-                            [ text "Send" ]
+                            [ text terms.send ]
                         ]
                     ]
                 , div [ class "level-right" ]
@@ -1179,7 +1204,7 @@ messageInputView messages formState model =
                                 , onClick (GotConversationViewMsg ToggleSendOnEnter)
                                 ]
                                 []
-                            , text "Press enter to send"
+                            , text terms.pressEnterToSend
                             ]
                         ]
                     ]
@@ -1191,6 +1216,7 @@ messageInputView messages formState model =
 conversationView : Model -> List (Html Msg)
 conversationView model =
     let
+        terms = getTerms model.language |> .conversationTerms
         formState =
             case model.form of
                 Just (ConversationViewForm state) ->
@@ -1210,7 +1236,7 @@ conversationView model =
 
         messageTiles =
             if List.isEmpty model.messages then
-                [ text "Select or create a conversation" ]
+                [ text  terms.selectOrCreateConversation]
 
             else
                 previousMessageIndicator
@@ -1232,7 +1258,7 @@ conversationView model =
                                     [ class "m-b-md button is-rounded"
                                     , onClick (GotConversationViewMsg NewConversationClicked)
                                     ]
-                                    [ text "New Conversation" ]
+                                    [ text terms.newConversation ]
                                 , div [ class "list is-hoverable has-background-white" ]
                                     (List.map
                                         (\c ->
@@ -1295,6 +1321,7 @@ getMyFriends model =
 friendsSiteView : Model -> List (Html Msg)
 friendsSiteView model =
     let
+        terms = getTerms model.language |> .friendsTerms
         formState =
             case model.form of
                 Just (FriendsSiteForm state) ->
@@ -1340,12 +1367,12 @@ friendsSiteView model =
                                                 [ class "button is-rounded"
                                                 , onClick (GotFriendsFormMsg (AcceptFriendRequest f.id))
                                                 ]
-                                                [ text "Accept" ]
+                                                [ text terms.acceptRequest ]
                                             , Html.button
                                                 [ class "button is-rounded is-danger"
                                                 , onClick (GotFriendsFormMsg (DeclineFriendRequest f.id))
                                                 ]
-                                                [ text "Decline" ]
+                                                [ text terms.declineRequest ]
                                             ]
                                         ]
                                     ]
@@ -1357,11 +1384,12 @@ friendsSiteView model =
     [ div [ class "columns m-l-sm m-r-sm m-t-md is-multiline" ]
         [ div [ class "column is-full" ]
             [ div [ class "columns " ]
-                [ div [ class "column is-2 " ]
+                [ div [ class "column is-4 " ]
                     [ div [ class "field has-addons" ]
                         [ div [ class "control" ]
                             [ Html.input
                                 [ class "input is-pulled-left m-r-sm"
+                                , Html.Attributes.attribute "aria-label" "friend input"
                                 , Html.Attributes.value formState.addFriendInput
                                 , onInput (GotFriendsFormMsg << ChangeNewFriendInput)
                                 ]
@@ -1372,7 +1400,7 @@ friendsSiteView model =
                                 [ class "button m-r-sm"
                                 , onClick (GotFriendsFormMsg AddNewFriendButtonClicked)
                                 ]
-                                [ text "Send friend request" ]
+                                [ text terms.sendFriendRequest ]
                             ]
                         ]
                     ]
@@ -1383,7 +1411,7 @@ friendsSiteView model =
                 [ div [ class "column is-one-second" ]
                     [ div [ class "box " ]
                         [ Html.table [ class "table is-fullwidth is-hoverable" ]
-                            [ Html.thead [ class "has-text-weight-bold" ] [ text "My friends" ]
+                            [ Html.thead [] [ Html.h3 [ class "has-text-weight-bold" ] [ text terms.myFriends ] ]
                             , Html.tbody []
                                 myFriends
                             ]
@@ -1392,7 +1420,7 @@ friendsSiteView model =
                 , div [ class "column is-one-second" ]
                     [ div [ class "box " ]
                         [ Html.table [ class "table is-fullwidth is-hoverable" ]
-                            [ Html.thead [ class "has-text-weight-bold" ] [ text "Pending Requests" ]
+                            [ Html.thead [] [ Html.h3 [ class "has-text-weight-bold" ] [ text terms.pendingRequests ] ]
                             , Html.tbody []
                                 pending
                             ]
