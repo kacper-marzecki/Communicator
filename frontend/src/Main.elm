@@ -757,10 +757,10 @@ menuBar : Model -> Html Msg
 menuBar model =
     nav [ class "navbar is-primary " ]
         [ div [ class "navbar-brand" ]
-            [ Html.a [ class "navbar-item", Html.Attributes.href "#", onClick OpenMainSite ]
-                [ i [ class "fas fa-home" ] []
+            [ Html.a [ class "navbar-item", onClick OpenMainSite ]
+                [ i [ class "fas fa-info-circle" ] []
                 ]
-            , Html.a [ class "navbar-item", Html.Attributes.href "#", onClick OpenFriendsSite ]
+            , Html.a [ class "navbar-item", Html.Attributes.classList [ ( "hidden", isNothing model.user ) ], onClick OpenFriendsSite ]
                 [ i [ class "fas fa-user-friends" ] []
                 ]
             , a [ class " navbar-item ", Html.Attributes.classList [ ( "hidden", isNothing model.user ) ], onClick OpenConversationSite ]
@@ -868,12 +868,13 @@ loginView model =
             [ div [ class "column is-4 is-offset-4" ]
                 [ div [ class "box box-center" ]
                     [ Html.figure [ class "avatar" ]
-                        [ img [ src "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=H+I&size=128x128" ] []
+                        [ img [ Html.Attributes.alt "Welcome text", src "https://eu.ui-avatars.com/api/?bold=true&rounded=true&name=H+I&size=128x128" ] []
                         ]
                     , div [ class "field" ]
                         [ div [ class "control " ]
                             [ input
                                 [ class "input is-large"
+                                , Html.Attributes.attribute "aria-label" "username-input"
                                 , Html.Attributes.placeholder "Username"
                                 , onInput (\a -> GotLoginFormMsg (ChangeLogin a))
                                 , Html.Attributes.value formState.login
@@ -886,6 +887,7 @@ loginView model =
                             [ input
                                 [ class "input is-large"
                                 , Html.Attributes.placeholder "Password"
+                                , Html.Attributes.attribute "aria-label" "password-input"
                                 , Html.Attributes.type_ "password"
                                 , onInput (\a -> GotLoginFormMsg (ChangePassword a))
                                 , Html.Attributes.value formState.password
@@ -1223,7 +1225,7 @@ conversationView model =
         ++ [ div [ class "m-l-md m-r-md m-b-md " ]
                 [ div [ class "hero is-fullheight" ]
                     [ div
-                        [ class "columns m-t-sm is-fullheight test" ]
+                        [ class "columns m-t-sm is-fullheight conversation-columns" ]
                         [ div [ class "column is-one-fifth fixed-column" ]
                             [ Html.aside [ class " is-narrow-mobile  box m-l-sm has-background-white-ter" ]
                                 [ Html.button
@@ -1356,19 +1358,23 @@ friendsSiteView model =
         [ div [ class "column is-full" ]
             [ div [ class "columns " ]
                 [ div [ class "column is-2 " ]
-                    [ Html.input
-                        [ class "input is-pulled-left m-r-sm"
-                        , Html.Attributes.value formState.addFriendInput
-                        , onInput (GotFriendsFormMsg << ChangeNewFriendInput)
+                    [ div [ class "field has-addons" ]
+                        [ div [ class "control" ]
+                            [ Html.input
+                                [ class "input is-pulled-left m-r-sm"
+                                , Html.Attributes.value formState.addFriendInput
+                                , onInput (GotFriendsFormMsg << ChangeNewFriendInput)
+                                ]
+                                []
+                            ]
+                        , div [ class "control" ]
+                            [ Html.button
+                                [ class "button m-r-sm"
+                                , onClick (GotFriendsFormMsg AddNewFriendButtonClicked)
+                                ]
+                                [ text "Send friend request" ]
+                            ]
                         ]
-                        []
-                    ]
-                , div [ class "column is-1" ]
-                    [ Html.button
-                        [ class "button is-rounded is-pulled-left m-r-sm"
-                        , onClick (GotFriendsFormMsg AddNewFriendButtonClicked)
-                        ]
-                        [ text "Send friend request" ]
                     ]
                 ]
             ]
@@ -1402,7 +1408,7 @@ view : Model -> Html Msg
 view model =
     let
         mainViewport =
-            Html.section [ class "hero is-primary  is-fullheight " ]
+            Html.main_ [ class "hero is-primary  is-fullheight " ]
                 (case model.site of
                     MainSite ->
                         [ div [] [ mainView ] ]
@@ -1438,8 +1444,7 @@ view model =
 
 
 type alias ProgramFlags =
-    { backendApi : String
-    }
+    { backendApi : String }
 
 
 main : Program ProgramFlags Model Msg

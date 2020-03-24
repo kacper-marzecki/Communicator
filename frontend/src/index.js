@@ -1,6 +1,5 @@
 import "./main.css";
 import { Elm } from "./Main.elm";
-import * as serviceWorker from "./serviceWorker";
 const USER_TOKEN = "user_token";
 
 var stompClient = null;
@@ -51,7 +50,6 @@ const subscribeToSocket = stomp => {
   stomp.subscribe("/user/topic/previous_messages", channel => {
     app.ports.gotPreviousMessage.send(JSON.parse(channel.body));
   });
-  
 };
 
 const sendWsEvent = (topic, value) => {
@@ -153,13 +151,3 @@ app.ports.logoutJs.subscribe(() => {
 });
 
 app.ports.getSavedUser.send(readUserFromLocalStorage());
-
-// app.ports.connectWs.subscribe(() => {
-//   let accessToken = readUserFromLocalStorage();
-//   socket.connect(accessToken.token)
-// })
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();

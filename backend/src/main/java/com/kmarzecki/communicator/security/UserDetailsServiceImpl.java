@@ -45,7 +45,7 @@ public class UserDetailsServiceImpl implements UserDetailsService  {
         UserEntity user = UserEntity.builder()
                 .password(new BCryptPasswordEncoder().encode(dto.getPassword()))
                 .username(dto.getUsername())
-                .roles(asSet(roleRepository.findByRole("USER_ROLE")))
+                .roles(asSet(roleRepository.findByName("USER_ROLE")))
                 .build();
         userRepository.save(user);
     }

@@ -12,5 +12,5 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
      * @param roleName role name
      * @return Role
      */
-    Role findByRole(String roleName);
+    Role findByName(String roleName);
 }

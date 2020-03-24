@@ -179,7 +179,7 @@ createYoutubeEmbeddedLink link =
     case List.head (link |> Regex.find reg) of
         Just match ->
             let
-                dupa =
+                linkHash =
                     match.match
                         |> String.dropLeft 2
                         |> (\it ->
@@ -190,7 +190,7 @@ createYoutubeEmbeddedLink link =
                                     it
                            )
             in
-            Just <| "//www.youtube.com/embed/" ++ dupa
+            Just <| "//www.youtube.com/embed/" ++ linkHash
 
         _ ->
             Nothing

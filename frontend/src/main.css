@@ -33,28 +33,17 @@ img {
   bottom: 0px !important;
 }
 
-.dupa {
-  height: 100%;
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-.test {
+.conversation-columns {
   height: 100%;
   display: flex !important;
-  /* align-items: stretch; */
-  /* position: relative; */
   align-self: stretch !important;
-  /* flex-grow: initial; */
 }
 
 .is-fullheight.columns {
-    height: calc(100vh - ( 3.25rem - .75rem ) );
+  height: calc(100vh - (3.25rem - 0.75rem));
 }
 
 .fixed-column {
-  /* min-height: 500px; */
-  /* max-height: 700px; */
   max-height: 100%;
   display: flex;
   flex-direction: column;
@@ -64,45 +53,32 @@ img {
 .scrollable-column {
   overflow: auto;
 }
-/* .columns {
-  display: flex !important;
-  flex-direction: row;
-  align-items: stretch;
-} */
-
-/* .is-fullheight {
-  height: 80vh;
-} */
 
 .hidden {
-  visibility: hidden; /* Hidden by default. Visible on click */
+  visibility: hidden;
 }
 #snackbar {
   z-index: 99999;
-  visibility: hidden; /* Hidden by default. Visible on click */
-  min-width: 250px; /* Set a default minimum width */
-  margin-left: -125px; /* Divide value of min-width by 2 */
-  background-color: #236; /* Black background color */
-  color: #fff; /* White text color */
-  text-align: center; /* Centered text */
-  border-radius: 2px; /* Rounded borders */
-  padding: 16px; /* Padding */
-  position: fixed; /* Sit on top of the screen */
-  z-index: 1; /* Add a z-index if needed */
-  left: 50%; /* Center the snackbar */
-  bottom: 30px; /* 30px from the bottom */
+  visibility: hidden; 
+  min-width: 250px; 
+  margin-left: -125px; 
+  background-color: #236; 
+  color: #fff; 
+  text-align: center;
+  border-radius: 2px;
+  padding: 16px; 
+  position: fixed; 
+  z-index: 1; 
+  left: 50%; 
+  bottom: 30px; 
 }
 
-/* Show the snackbar when clicking on a button (class added with JavaScript) */
 #snackbar.show {
-  visibility: visible; /* Show the snackbar */
-  /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
-  However, delay the fade out process for 2.5 seconds */
+  visibility: visible;
   -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
   animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
 
-/* Animations to fade the snackbar in and out */
 @-webkit-keyframes fadein {
   from {
     bottom: 0;
