@@ -15,7 +15,7 @@ import java.security.Principal;
  */
 @RestController
 @RequestMapping("/friends")
-@CrossOrigin(origins = {"http://localhost:3000", "https://communicator-pw.netlify.com/"},allowCredentials = "true", allowedHeaders = "*")
+@CrossOrigin(origins = {"*"},allowCredentials = "true", allowedHeaders = "*")
 @AllArgsConstructor
 public class FriendController {
     private final FriendsService friendsService;
