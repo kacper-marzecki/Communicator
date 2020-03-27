@@ -4,8 +4,8 @@ const USER_TOKEN = "user_token";
 
 let backendApi =
   window.location.href.indexOf("localhost") !== -1
-    ? "https://communicator-pw.herokuapp.com"
-    : "localhost:8080";
+    ? "localhost:8080"
+    : "https://communicator-pw.herokuapp.com";
 var stompClient = null;
 let app = Elm.Main.init({
   flags: {
