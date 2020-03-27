@@ -6,6 +6,8 @@ let backendApi =
   window.location.href.indexOf("localhost") !== -1
     ? "localhost:8080"
     : "https://communicator-pw.herokuapp.com";
+console.log(backendApi);
+
 var stompClient = null;
 let app = Elm.Main.init({
   flags: {
