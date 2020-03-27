@@ -22,6 +22,19 @@ repositories {
 	mavenCentral()
 }
 
+processResources {
+    exclude('node_modules/*')
+    exclude('tests/*')
+    exclude('src/*')
+    exclude('scripts/*')
+    exclude('public/*')
+    exclude('elm-stuff/*')
+    exclude('config/*')
+    exclude('static/*')
+    exclude('*.json')
+    exclude('index.html')
+}
+
 dependencies {
     // general dependencies
     compileOnly 'org.projectlombok:lombok'
