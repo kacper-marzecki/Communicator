@@ -2,17 +2,21 @@ import "./main.css";
 import { Elm } from "./Main.elm";
 const USER_TOKEN = "user_token";
 
+let backendApi =
+  window.location.href.indexOf("localhost") !== -1
+    ? "localhost:8080"
+    : "https://communicator-pw.herokuapp.com";
 var stompClient = null;
 let app = Elm.Main.init({
   flags: {
-    backendApi: process.env.BACKEND_API || ""
+    backendApi: backendApi
   },
   node: document.getElementById("root")
 });
 
 const connectWs = accessToken => {
   if (accessToken) {
-    var socket = new SockJS("http://localhost:8080/ws_endpoint");
+    var socket = new SockJS(backendApi + "/ws_endpoint");
     stompClient = Stomp.over(socket);
     console.log("connecting with token : " + accessToken);
     stompClient.connect({ token: accessToken }, function(frame) {

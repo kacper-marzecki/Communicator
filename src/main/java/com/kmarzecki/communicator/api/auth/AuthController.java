@@ -18,7 +18,7 @@ import java.security.Principal;
  */
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000",allowCredentials = "true", allowedHeaders = "*")
+@CrossOrigin(origins = {"http://localhost:3000", "https://communicator-pw.netlify.com/"},allowCredentials = "true", allowedHeaders = "*")
 @AllArgsConstructor
 public class AuthController {
     private final AuthenticationService authenticationService;
