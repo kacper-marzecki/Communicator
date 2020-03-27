@@ -5,7 +5,7 @@ const USER_TOKEN = "user_token";
 var stompClient = null;
 let app = Elm.Main.init({
   flags: {
-    backendApi: process.env.BACKEND_API
+    backendApi: process.env.BACKEND_API || ""
   },
   node: document.getElementById("root")
 });
@@ -148,6 +148,14 @@ app.ports.logoutJs.subscribe(() => {
   stompClient.disconnect();
   stompClient = null;
   localStorage.removeItem(USER_TOKEN);
+});
+
+app.ports.clearMessageInput.subscribe(() => {
+  let messageInput = document.getElementById("message-input");
+  console.error(messageInput);
+  if (messageInput) {
+    messageInput.value = "";
+  }
 });
 
 app.ports.getSavedUser.send(readUserFromLocalStorage());

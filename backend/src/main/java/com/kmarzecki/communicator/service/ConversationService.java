@@ -1,6 +1,7 @@
 package com.kmarzecki.communicator.service;
 
 import com.kmarzecki.communicator.api.conversation.MessageRequest;
+import com.kmarzecki.communicator.model.Language;
 
 import java.security.Principal;
 import java.util.Set;
@@ -22,9 +23,10 @@ public interface ConversationService {
      * Pushes the response through a websocket connection
      * @param channelName Channel name
      * @param usernames Usernames of users to add to the channel
+     * @param language user language
      * @param creator Channel creator principal
      */
-    void createChannel(String channelName, Set<String> usernames, Principal creator);
+    void createChannel(String channelName, Set<String> usernames, Language language, Principal creator);
 
     /**
      * Message a channel

@@ -1,5 +1,6 @@
 package com.kmarzecki.communicator.api.conversation;
 
+import com.kmarzecki.communicator.model.Language;
 import com.kmarzecki.communicator.service.ConversationService;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -30,14 +31,16 @@ public class ConversationController {
     /**
      * Create a conversation channel
      * @param request Information about the new conversation channel
+     * @param language User language
      * @param principal Principal of the requesting user
      */
     @PostMapping
     public void createChannel(
             @Valid @RequestBody CreateChannelRequest request,
+            @RequestParam(name = "language") Language language,
             Principal principal
     ) {
-        conversationService.createChannel(request.getName(), request.getUsernames(), principal);
+        conversationService.createChannel(request.getName(), request.getUsernames(),language,  principal);
     }
 
     /**

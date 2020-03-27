@@ -2,6 +2,7 @@ package com.kmarzecki.communicator.service;
 
 import com.kmarzecki.communicator.api.conversation.MessageRequest;
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
+import com.kmarzecki.communicator.model.Language;
 import com.kmarzecki.communicator.model.auth.UserEntity;
 import com.kmarzecki.communicator.model.conversation.ChannelEntity;
 import com.kmarzecki.communicator.model.conversation.ChannelListResponse;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.kmarzecki.communicator.util.CollectionUtils.mapList;
+import static com.kmarzecki.communicator.util.InternationalizationUtil.*;
 import static com.kmarzecki.communicator.util.MessageUtils.*;
 
 @Service
@@ -46,15 +48,15 @@ class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public void createChannel(String channelName, Set<String> usernames, Principal creator) {
+    public void createChannel(String channelName, Set<String> usernames, Language language, Principal creator) {
         usernames.add(creator.getName());
         Set<UserEntity> users = userRepository.findAllByUsernameIn(usernames);
         if (users.size() != usernames.size()) {
-            sendError(messagingTemplate, creator.getName(), "Cannot find all requested users");
+            sendError(messagingTemplate, creator.getName(), cannotFindRequestedUsers(language));
             throw new OperationNotPermittedException();
         }
         if (channelRepository.existsByNameAndUsers_UsernameIn(channelName, usernames)){
-            sendError(messagingTemplate, creator.getName(), "Conversation name is not unique");
+            sendError(messagingTemplate, creator.getName(), conversationNameIsNotUnique(language) );
             throw new OperationNotPermittedException();
         }
 

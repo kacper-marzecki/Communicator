@@ -1,5 +1,6 @@
 package com.kmarzecki.communicator.security;
 
+import com.kmarzecki.communicator.model.Language;
 import com.kmarzecki.communicator.model.auth.LoginDto;
 import com.kmarzecki.communicator.model.auth.LoginResponse;
 import com.kmarzecki.communicator.model.auth.RegisterDto;
@@ -14,6 +15,7 @@ public interface AuthenticationService {
     /**
      * Login user
      * @param dto dto containing login information
+     * @param language
      * @return logged user response
      */
     LoginResponse login(LoginDto dto);
@@ -21,8 +23,9 @@ public interface AuthenticationService {
     /**
      * Register user
      * @param registerDto dto containing registration information
+     * @param language
      */
-    void register(RegisterDto registerDto);
+    void register(RegisterDto registerDto, Language language);
 
     /**
      * Get user information

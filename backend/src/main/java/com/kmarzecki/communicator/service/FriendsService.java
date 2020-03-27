@@ -1,5 +1,7 @@
 package com.kmarzecki.communicator.service;
 
+import com.kmarzecki.communicator.model.Language;
+
 import java.security.Principal;
 
 /**
@@ -16,17 +18,19 @@ public interface FriendsService {
     /**
      * Add a friend
      * Pushes the response through a websocket connection
-     * @param request Request containing data for a adding a friend
-     * @param principal Principal of the requesting user
+     * @param requester Friendship requester id
+     * @param target User id of the target of the friendship
+     * @param language User language
      */
-    void addFriend(String requester, String target);
+    void addFriend(String requester, String target, Language language);
 
     /**
      * Respond to a friendship request
      * Pushes the response through a websocket connection
-     * @param request Request containing data with a response to a friendship request
-     * @param principal Principal of the requesting user
-     * @param request_id id of the friendship request
+     * @param id friendship request id
+     * @param accept whether the request is accepted
+     * @param language User language
+     * @param principal principal of the responding user
      */
-    void processFriendshipRequest(Integer id, boolean accept, Principal principal);
+    void processFriendshipRequest(Integer id, boolean accept, Principal principal , Language language);
 }

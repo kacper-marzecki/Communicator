@@ -79,6 +79,9 @@ port gotMessage : (E.Value -> msg) -> Sub msg
 port gotPreviousMessage : (E.Value -> msg) -> Sub msg
 
 
+port clearMessageInput : () -> Cmd msg
+
+
 showSnackbar : String -> Cmd msg
 showSnackbar s =
     showSnackbarOut (E.string s)
@@ -94,12 +97,25 @@ getToken model =
             "falseToken"
 
 
+languageParam : TermsLanguage -> ( String, String )
+languageParam lang =
+    ( "language"
+    , case lang of
+        PL ->
+            "PL"
+
+        EN ->
+            "EN"
+    )
+
+
 getLatestMessagesFromChannel : Model -> ChannelId -> Cmd Msg
 getLatestMessagesFromChannel model channelId =
     authedGet
         { model = model
         , body = Http.emptyBody
-        , url = "/conversation/message?channelId=" ++ String.fromInt channelId
+        , url = "/conversation/message"
+        , params = [ ( "channelId", String.fromInt channelId ) ]
         , expect = Http.expectWhatever NoOp
         }
 
@@ -109,15 +125,16 @@ getPreviousMessages model channelId timeMillis =
     authedGet
         { model = model
         , body = Http.emptyBody
-        , url = "/conversation/previous_messages?channelId=" ++ String.fromInt channelId ++ "&before=" ++ String.fromInt timeMillis
+        , url = "/conversation/previous_messages"
+        , params = [ ( "channelId", String.fromInt channelId ), ( "before", String.fromInt timeMillis ) ]
         , expect = Http.expectWhatever NoOp
         }
 
 
-login : String -> LoginFormState -> Cmd Msg
-login backendApi loginForm =
+login : String -> LoginFormState -> TermsLanguage -> Cmd Msg
+login backendApi loginForm language =
     Http.post
-        { url = backendApi ++ "/api/auth/login"
+        { url = backendApi ++ "/api/auth/login" ++ joinParams [ languageParam language ]
         , expect = Http.expectJson (ApiMessage << LoggedIn) userDecoder
         , body = Http.jsonBody (encodeLoginForm loginForm)
         }
@@ -129,6 +146,7 @@ respondToFriendRequest id response model =
         { model = model
         , url = "/friends/process_request/" ++ String.fromInt id
         , expect = Http.expectWhatever NoOp
+        , params = []
         , body = Http.jsonBody (encodeRespondToFriendRequest response)
         }
 
@@ -139,6 +157,7 @@ sendMessage message channelId model =
         { model = model
         , url = "/conversation/message"
         , expect = Http.expectWhatever NoOp
+        , params = []
         , body = Http.jsonBody (Messages.encodeSendMessageRequest message channelId)
         }
 
@@ -149,6 +168,7 @@ authedRequest :
     , url : String
     , method : String
     , expect : Http.Expect msg
+    , params : List ( String, String )
     }
     -> Cmd msg
 authedRequest r =
@@ -161,10 +181,22 @@ authedRequest r =
         , body = r.body
         , timeout = Nothing
         , tracker = Nothing
-        , url = r.model.backendApi ++ r.url
+        , url = r.model.backendApi ++ r.url ++ joinParams (languageParam r.model.language :: r.params)
         , expect = r.expect
         , headers = [ Http.header "token" authentication ]
         }
+
+
+joinParams : List ( String, String ) -> String
+joinParams params =
+    let
+        paramEquals =
+            List.map (\( a, b ) -> String.join "=" [ a, b ]) params
+
+        paramsString =
+            String.join "&" paramEquals
+    in
+    "?" ++ paramsString
 
 
 authedGet :
@@ -172,6 +204,7 @@ authedGet :
     , body : Http.Body
     , url : String
     , expect : Http.Expect msg
+    , params : List ( String, String )
     }
     -> Cmd msg
 authedGet r =
@@ -180,6 +213,7 @@ authedGet r =
         , body = r.body
         , url = r.url
         , expect = r.expect
+        , params = r.params
         , method = "GET"
         }
 
@@ -189,6 +223,7 @@ authedPost :
     , body : Http.Body
     , url : String
     , expect : Http.Expect msg
+    , params : List ( String, String )
     }
     -> Cmd msg
 authedPost r =
@@ -198,6 +233,7 @@ authedPost r =
         , url = r.url
         , expect = r.expect
         , method = "POST"
+        , params = r.params
         }
 
 
@@ -212,7 +248,7 @@ testAuth model =
         , body = Http.emptyBody
         , timeout = Nothing
         , tracker = Nothing
-        , url = model.backendApi ++ "/api/auth/me"
+        , url = model.backendApi ++ "/api/auth/me" ++ joinParams [ languageParam model.language ]
         , expect = Http.expectWhatever AuthTest
         , headers = [ Http.header "token" authentication ]
         }
@@ -224,36 +260,26 @@ createConversation model formState =
         { model = model
         , body = Http.jsonBody (encodeCreateConversation formState)
         , url = "/conversation"
+        , params = []
         , expect = Http.expectWhatever (GotConversationViewMsg << GotNewConversationFormMsg << CreateConversationResponse)
         }
 
 
 addNewFriend : Model -> FriendsSiteState -> Cmd Msg
 addNewFriend model formState =
-    let
-        authentication =
-            case model.user of
-                Just user ->
-                    user.token
-
-                Nothing ->
-                    "fakeToken"
-    in
-    Http.request
-        { method = "POST"
-        , url = model.backendApi ++ "/friends"
-        , timeout = Nothing
-        , tracker = Nothing
+    authedPost
+        { model = model
+        , url = "/friends"
+        , params = []
         , expect = Http.expectWhatever NoOp
         , body = Http.jsonBody (Friends.encodeAddFriendRequest formState)
-        , headers = [ Http.header "token" authentication ]
         }
 
 
-registerUser : String -> RegistrationFormState -> Cmd Msg
-registerUser backendApi registerForm =
+registerUser : String -> RegistrationFormState -> TermsLanguage -> Cmd Msg
+registerUser backendApi registerForm language =
     Http.post
-        { url = backendApi ++ "/api/auth/register"
+        { url = backendApi ++ "/api/auth/register" ++ joinParams [ languageParam language ]
         , expect = Http.expectWhatever (ApiMessage << RegistrationComplete)
         , body = Http.jsonBody (encodeRegisterForm registerForm)
         }
@@ -318,7 +344,7 @@ init flags =
             , language = PL
             , site = LoginSite
             , user = Nothing
-            , form = Nothing
+            , form = Just (LoginForm newLoginForm)
             , menuOpen = False
             , loading = False
             , chosenChannel = Nothing
@@ -450,7 +476,7 @@ loginUpdate msg state model =
             ( { model | form = Just (LoginForm newFormState) }, Cmd.none )
 
         LoginButtonClicked ->
-            ( model, login model.backendApi state )
+            ( model, login model.backendApi state model.language )
 
         OpenRegistrationSite ->
             ( { model | site = RegistrationSite, form = Just (RegistrationForm initRegistrationForm) }, Cmd.none )
@@ -458,6 +484,10 @@ loginUpdate msg state model =
 
 registrationUpdate : RegisterFormMsg -> RegistrationFormState -> Model -> ( Model, Cmd Msg )
 registrationUpdate msg state model =
+    let
+        terms =
+            getTerms model.language |> .registerTerms
+    in
     case msg of
         ChangeRegisterLogin s ->
             let
@@ -484,25 +514,29 @@ registrationUpdate msg state model =
             let
                 cmd =
                     if state.password == state.passwordRepeat then
-                        registerUser model.backendApi state
+                        registerUser model.backendApi state model.language
 
                     else
-                        showSnackbar "Passwords dont match"
+                        showSnackbar terms.passwordsDontMatch
             in
             ( model, cmd )
 
 
 apiUpdate : ApiMsg -> Model -> Maybe Form -> ( Model, Cmd Msg )
 apiUpdate msg model form =
+    let
+        terms =
+            getTerms model.language
+    in
     case msg of
         LoggedIn (Err _) ->
-            ( model, showSnackbar "Cannot log in. Forgot password ?" )
+            ( model, showSnackbar terms.cannotSignIn )
 
         GotConversations (Err _) ->
-            ( model, showSnackbar "Cannot get conversations, please try later" )
+            ( model, showSnackbar terms.cannotGetConversations )
 
         RegistrationComplete (Err _) ->
-            ( model, showSnackbar "Cannot register, please try a different Username" )
+            ( model, showSnackbar terms.cannotRegister )
 
         RegistrationComplete (Ok _) ->
             update OpenLoginSite model
@@ -542,6 +576,10 @@ friendsUpdate msg state model =
 
 newConversationUpdate : NewConversationFormMsg -> Maybe NewConversationFormState -> Model -> ( Maybe NewConversationFormState, Cmd Msg )
 newConversationUpdate msg formState model =
+    let
+        terms =
+            getTerms model.language |> .conversationTerms
+    in
     case ( msg, formState ) of
         ( AddFriendToConversation s, Just state ) ->
             ( Just { state | addedFriends = addIfNotPresent s state.addedFriends }, Cmd.none )
@@ -559,7 +597,7 @@ newConversationUpdate msg formState model =
             ( Nothing, Cmd.none )
 
         ( CreateConversationResponse (Err _), _ ) ->
-            ( Nothing, showSnackbar "Cannot create such conversation" )
+            ( Nothing, showSnackbar terms.cannotCreateConversation )
 
         ( CreateConversationButtonClicked, Just state ) ->
             ( Just state, createConversation model state )
@@ -637,7 +675,7 @@ conversationUpdate msg model state =
                         newState =
                             { state | messageInput = "" }
                     in
-                    ( { model | form = Just <| ConversationViewForm newState }, sendMessage state.messageInput id model )
+                    ( { model | form = Just <| ConversationViewForm newState }, Cmd.batch [ sendMessage state.messageInput id model, clearMessageInput () ] )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -645,6 +683,10 @@ conversationUpdate msg model state =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        terms =
+            getTerms model.language
+    in
     case ( msg, model.form ) of
         ( ApiMessage x, form ) ->
             apiUpdate x model form
@@ -694,7 +736,7 @@ update msg model =
             ( model, connectWs () )
 
         ( AuthTest (Err _), _ ) ->
-            ( { model | site = LoginSite, user = Nothing, form = Just (LoginForm newLoginForm), menuOpen = False }, showSnackbar "Cannot Log In" )
+            ( { model | site = LoginSite, user = Nothing, form = Just (LoginForm newLoginForm), menuOpen = False }, showSnackbar terms.cannotSignIn )
 
         ( GotFriend (Ok friend), _ ) ->
             let
@@ -1130,11 +1172,7 @@ messageView message =
                     , messageTextView message.payload
                     ]
                 ]
-            , Html.nav [ class "level is-mobile" ]
-                [ div [ class "level-left" ]
-                    [ a [ class "level-item icon is-small" ] [ Html.i [ class "fas fa-reply" ] [] ]
-                    ]
-                ]
+            , Html.nav [ class "level is-mobile" ] [ div [ class "level-left" ] [] ]
             ]
         ]
 
@@ -1175,6 +1213,7 @@ messageInputView messages formState model =
                 [ Html.p [ class "control " ]
                     [ Html.textarea
                         [ class "is-fullwidth input"
+                        , Html.Attributes.id "message-input"
                         , Html.Attributes.attribute "aria-label" terms.messageContent
                         , Html.Attributes.placeholder terms.messageContent
                         , Html.Attributes.value formState.messageInput
@@ -1216,7 +1255,9 @@ messageInputView messages formState model =
 conversationView : Model -> List (Html Msg)
 conversationView model =
     let
-        terms = getTerms model.language |> .conversationTerms
+        terms =
+            getTerms model.language |> .conversationTerms
+
         formState =
             case model.form of
                 Just (ConversationViewForm state) ->
@@ -1236,7 +1277,7 @@ conversationView model =
 
         messageTiles =
             if List.isEmpty model.messages then
-                [ text  terms.selectOrCreateConversation]
+                []
 
             else
                 previousMessageIndicator
@@ -1251,29 +1292,27 @@ conversationView model =
         ++ [ div [ class "m-l-md m-r-md m-b-md " ]
                 [ div [ class "hero is-fullheight" ]
                     [ div
-                        [ class "columns m-t-sm is-fullheight conversation-columns" ]
+                        [ class "columns m-t-sm is-fullheight" ]
                         [ div [ class "column is-one-fifth fixed-column" ]
-                            [ Html.aside [ class " is-narrow-mobile  box m-l-sm has-background-white-ter" ]
-                                [ Html.button
-                                    [ class "m-b-md button is-rounded"
-                                    , onClick (GotConversationViewMsg NewConversationClicked)
-                                    ]
-                                    [ text terms.newConversation ]
-                                , div [ class "list is-hoverable has-background-white" ]
-                                    (List.map
-                                        (\c ->
-                                            Html.a
-                                                [ Html.Attributes.classList
-                                                    [ ( "list-item is-borderless", True )
-                                                    , ( "has-background-white", Utils.equal model.chosenChannel c.id )
-                                                    ]
-                                                , onClick (GotConversationViewMsg (ConversationClicked c.id))
-                                                ]
-                                                [ text c.name ]
-                                        )
-                                        (Dict.values model.channels)
-                                    )
+                            [ Html.button
+                                [ class "m-b-md button is-rounded"
+                                , onClick (GotConversationViewMsg NewConversationClicked)
                                 ]
+                                [ text terms.newConversation ]
+                            , div [ class "list is-hoverable has-background-white" ]
+                                (List.map
+                                    (\c ->
+                                        Html.a
+                                            [ Html.Attributes.classList
+                                                [ ( "list-item is-rounded is-borderless", True )
+                                                , ( "has-background-white", Utils.equal model.chosenChannel c.id )
+                                                ]
+                                            , onClick (GotConversationViewMsg (ConversationClicked c.id))
+                                            ]
+                                            [ text c.name ]
+                                    )
+                                    (Dict.values model.channels)
+                                )
                             ]
                         , div [ class "column fixed-column" ]
                             [ Html.aside [ class " box scrollable-column has-background-white-ter", Html.Attributes.id "messagesView" ]
@@ -1321,7 +1360,9 @@ getMyFriends model =
 friendsSiteView : Model -> List (Html Msg)
 friendsSiteView model =
     let
-        terms = getTerms model.language |> .friendsTerms
+        terms =
+            getTerms model.language |> .friendsTerms
+
         formState =
             case model.form of
                 Just (FriendsSiteForm state) ->

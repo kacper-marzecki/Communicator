@@ -1,6 +1,7 @@
 package com.kmarzecki.communicator.security;
 
 import com.kmarzecki.communicator.exception.OperationNotPermittedException;
+import com.kmarzecki.communicator.model.Language;
 import com.kmarzecki.communicator.model.auth.LoginDto;
 import com.kmarzecki.communicator.model.auth.LoginResponse;
 import com.kmarzecki.communicator.model.auth.RegisterDto;
@@ -12,6 +13,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
+
+import static com.kmarzecki.communicator.util.InternationalizationUtil.userExists;
 
 @Service
 @AllArgsConstructor
@@ -32,9 +35,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void register(RegisterDto dto) {
+    public void register(RegisterDto dto, Language language) {
         if (userService.existsByUsername(dto.getUsername())) {
-            throw new OperationNotPermittedException("User: " + dto.getUsername() + " exists");
+                throw new OperationNotPermittedException(userExists(dto.getUsername(), language));
         }
         userService.saveUser(dto);
     }

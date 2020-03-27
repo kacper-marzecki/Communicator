@@ -1,5 +1,6 @@
 package com.kmarzecki.communicator.api.auth;
 
+import com.kmarzecki.communicator.model.Language;
 import com.kmarzecki.communicator.model.auth.LoginDto;
 import com.kmarzecki.communicator.model.auth.LoginResponse;
 import com.kmarzecki.communicator.model.auth.RegisterDto;
@@ -28,7 +29,9 @@ public class AuthController {
      * @return
      */
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody @Validated LoginRequest request) {
+    public LoginResponse login(
+            @RequestBody @Validated LoginRequest request
+    ) {
         return authenticationService.login(new LoginDto(request.getUsername(), request.getPassword()));
     }
 
@@ -37,8 +40,10 @@ public class AuthController {
      * @param request Request containing registration information
      */
     @PostMapping("/register")
-    public void register(@RequestBody RegisterRequest request) {
-        authenticationService.register(new RegisterDto(request.getUsername(), request.getPassword()));
+    public void register(@RequestBody RegisterRequest request,
+                         @RequestParam(name = "language") Language language
+    ) {
+        authenticationService.register(new RegisterDto(request.getUsername(), request.getPassword()), language);
     }
 
     /**

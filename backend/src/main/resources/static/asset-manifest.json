@@ -1,0 +1,18 @@
+{
+  "main.css": "/static/css/main.fb1d0a18.chunk.css",
+  "main.js": "/static/js/main.6289a82f.chunk.js",
+  "main.js.map": "/static/js/main.6289a82f.chunk.js.map",
+  "runtime~main.js": "/static/js/runtime~main.1b922744.js",
+  "runtime~main.js.map": "/static/js/runtime~main.1b922744.js.map",
+  "vendors~main.css": "/static/css/vendors~main.1e2c9bd7.chunk.css",
+  "vendors~main.js": "/static/js/vendors~main.116cb635.chunk.js",
+  "vendors~main.js.map": "/static/js/vendors~main.116cb635.chunk.js.map",
+  "./service-worker.js": "/./service-worker.js",
+  "favicon.ico": "/favicon.ico",
+  "index.html": "/index.html",
+  "logo.svg": "/logo.svg",
+  "manifest.json": "/manifest.json",
+  "poland.svg": "/poland.svg",
+  "precache-manifest.91000cbd816935f861b3c5f93002ff29.js": "/precache-manifest.91000cbd816935f861b3c5f93002ff29.js",
+  "uk.svg": "/uk.svg"
+}

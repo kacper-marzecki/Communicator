@@ -1,5 +1,6 @@
 package com.kmarzecki.communicator.api.friends;
 
+import com.kmarzecki.communicator.model.Language;
 import com.kmarzecki.communicator.service.FriendsService;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -36,11 +37,11 @@ public class FriendController {
      */
     @PostMapping
     public void addFriend(
-            @Valid
-            @RequestBody AddFriendRequest request,
+            @Valid @RequestBody AddFriendRequest request,
+            @RequestParam(name = "language") Language language,
             Principal principal
     ) {
-        friendsService.addFriend(principal.getName(), request.getTarget());
+        friendsService.addFriend(principal.getName(), request.getTarget(), language);
     }
 
     /**
@@ -51,13 +52,11 @@ public class FriendController {
      */
     @PostMapping("/process_request/{id}")
     public void processRequest(
-            @Valid
-            @RequestBody
-            ProcessFriendshipRequest request,
-            Principal principal,
-            @PathVariable(name = "id")
-            Integer request_id
-    ) {
-        friendsService.processFriendshipRequest(request_id, request.isAcceptRequest(), principal );
+            @Valid @RequestBody ProcessFriendshipRequest request,
+            @PathVariable(name = "id") Integer request_id,
+            @RequestParam(name = "language")Language language,
+            Principal principal
+            ) {
+        friendsService.processFriendshipRequest(request_id, request.isAcceptRequest(), principal, language );
     }
 }

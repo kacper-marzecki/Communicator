@@ -2,7 +2,7 @@ module Terms exposing (..)
 
 
 type TermsLanguage
-    = PL 
+    = PL
     | EN
 
 
@@ -27,6 +27,7 @@ type alias ConversationTerms =
     , friendsInConversation : String
     , createConversation : String
     , name : String
+    , cannotCreateConversation : String
     }
 
 
@@ -34,7 +35,7 @@ type alias LogInTerms =
     { username : String
     , password : String
     , logIn : String
-    , register: String
+    , register : String
     }
 
 
@@ -42,12 +43,16 @@ type alias RegisterTerms =
     { username : String
     , password : String
     , register : String
+    , passwordsDontMatch : String
     }
 
 
 type alias Terms =
     { signOut : String
     , signIn : String
+    , cannotSignIn : String
+    , cannotGetConversations : String
+    , cannotRegister : String
     , logInTerms : LogInTerms
     , registerTerms : RegisterTerms
     , conversationTerms : ConversationTerms
@@ -69,6 +74,7 @@ registerTermsPL =
     { username = "Użytkownik"
     , password = "Hasło"
     , register = "Zarejestruj się"
+    , passwordsDontMatch = "Hasła nie są takie same"
     }
 
 
@@ -85,6 +91,7 @@ conversationTermsPL =
     , friendsInConversation = "Znajomi w konwersacji"
     , createConversation = "Stwórz konwersację !"
     , name = "Nazwa"
+    , cannotCreateConversation = "Nie można utworzyć takiej konwersacji"
     }
 
 
@@ -102,6 +109,9 @@ termsPL : Terms
 termsPL =
     { signOut = "Wyloguj się"
     , signIn = "Zaloguj się"
+    , cannotSignIn = "Nie mogę się\u{00A0}zalogować"
+    , cannotGetConversations = "Nie można pobrać konwersacji"
+    , cannotRegister = "Wystąpił problem przy rejestracji"
     , logInTerms = logInTermsPL
     , registerTerms = registerTermsPL
     , conversationTerms = conversationTermsPL
@@ -123,6 +133,7 @@ registerTermsEN =
     { username = "Username"
     , password = "Password"
     , register = "Register"
+    , passwordsDontMatch = "Passwords dont match"
     }
 
 
@@ -139,6 +150,7 @@ conversationTermsEN =
     , friendsInConversation = "Friends in conversation"
     , createConversation = "Create new conversation !"
     , name = "Name"
+    , cannotCreateConversation = "Cannot create such conversation"
     }
 
 
@@ -156,6 +168,9 @@ termsEN : Terms
 termsEN =
     { signOut = "Sign out"
     , signIn = "Sign in"
+    , cannotSignIn = "Cannot log in. Forgot password ?"
+    , cannotGetConversations = "Cannot get conversations, please try later"
+    , cannotRegister = "Cannot register, please try a different Username"
     , logInTerms = logInTermsEN
     , registerTerms = registerTermsEN
     , conversationTerms = conversationTermsEN
