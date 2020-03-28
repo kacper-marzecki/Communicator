@@ -1,0 +1,22 @@
+{
+  "main.css": "/static/css/main.fb1d0a18.chunk.css",
+  "main.js": "/static/js/main.ed0a7c2b.chunk.js",
+  "main.js.map": "/static/js/main.ed0a7c2b.chunk.js.map",
+  "runtime~main.js": "/static/js/runtime~main.1b922744.js",
+  "runtime~main.js.map": "/static/js/runtime~main.1b922744.js.map",
+  "vendors~main.css": "/static/css/vendors~main.1e2c9bd7.chunk.css",
+  "vendors~main.js": "/static/js/vendors~main.116cb635.chunk.js",
+  "vendors~main.js.map": "/static/js/vendors~main.116cb635.chunk.js.map",
+  "./service-worker.js": "/./service-worker.js",
+  "add-conversation-info.png": "/add-conversation-info.png",
+  "conversation-info.png": "/conversation-info.png",
+  "favicon.ico": "/favicon.ico",
+  "friends-info.png": "/friends-info.png",
+  "index.html": "/index.html",
+  "logo.svg": "/logo.svg",
+  "manifest.json": "/manifest.json",
+  "navbar-info.png": "/navbar-info.png",
+  "poland.svg": "/poland.svg",
+  "precache-manifest.01533941eb1657e116b2549dd49d05df.js": "/precache-manifest.01533941eb1657e116b2549dd49d05df.js",
+  "uk.svg": "/uk.svg"
+}
