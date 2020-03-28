@@ -49,6 +49,7 @@ public class WebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapte
                 .antMatchers("/logo.svg").permitAll()
                 .antMatchers("/favicon.ico").permitAll()
                 .antMatchers("/index.html").permitAll()
+                .antMatchers("/*.png").permitAll()
                 .antMatchers("/").permitAll()
                 .anyRequest().authenticated()
                 .and().csrf().disable()
