@@ -54,7 +54,7 @@ public class UserDetailsServiceImpl implements UserDetailsService  {
      * Load user by username
      * @param username username
      * @return User details
-     * @throws UsernameNotFoundException
+     * @throws UsernameNotFoundException if user with specified username is not found
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

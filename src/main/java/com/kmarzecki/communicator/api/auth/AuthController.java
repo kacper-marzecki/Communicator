@@ -26,7 +26,7 @@ public class AuthController {
     /**
      * Login a user
      * @param request Request containing login information
-     * @return
+     * @return logged user response
      */
     @PostMapping("/login")
     public LoginResponse login(
@@ -38,6 +38,7 @@ public class AuthController {
     /**
      * Register a user
      * @param request Request containing registration information
+     * @param language user language
      */
     @PostMapping("/register")
     public void register(@RequestBody RegisterRequest request,

@@ -17,6 +17,7 @@ public class CollectionUtils {
      * Convert an element to a Set of element
      *
      * @param x element
+     * @param <T> type of element x
      * @return a set
      */
     public static <T> Set<T> asSet(T x) {
@@ -24,8 +25,10 @@ public class CollectionUtils {
     }
 
     /**
-     * @param mapper function A -> B
+     * @param mapper function transforming elements of type A  to type B
      * @param xs     Collection A
+     * @param <A> type of input element
+     * @param <B> type of output element
      * @return List of B
      */
     public static <A, B> List<B> mapList(Function<A, B> mapper, Collection<A> xs) {

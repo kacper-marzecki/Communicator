@@ -15,7 +15,6 @@ public interface AuthenticationService {
     /**
      * Login user
      * @param dto dto containing login information
-     * @param language
      * @return logged user response
      */
     LoginResponse login(LoginDto dto);
@@ -23,7 +22,7 @@ public interface AuthenticationService {
     /**
      * Register user
      * @param registerDto dto containing registration information
-     * @param language
+     * @param language user language
      */
     void register(RegisterDto registerDto, Language language);
 

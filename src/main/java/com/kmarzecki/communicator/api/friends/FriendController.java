@@ -34,6 +34,7 @@ public class FriendController {
      * Add a friend
      * @param request Request containing data for a adding a friend
      * @param principal Principal of the requesting user
+     * @param language user language
      */
     @PostMapping
     public void addFriend(
@@ -49,6 +50,7 @@ public class FriendController {
      * @param request Request containing data with a response to a friendship request
      * @param principal Principal of the requesting user
      * @param request_id id of the friendship request
+     * @param language user language
      */
     @PostMapping("/process_request/{id}")
     public void processRequest(
