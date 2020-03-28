@@ -9,17 +9,16 @@ import Html exposing (Html, a, div, h1, i, img, input, nav, td, text, tr)
 import Html.Attributes exposing (attribute, class, src, title)
 import Html.Events exposing (onClick, onInput)
 import Http
+import Info exposing (..)
 import Json.Decode exposing (Decoder, field, string)
 import Json.Encode as E
 import Login exposing (LoginFormState, encodeLoginForm, newLoginForm)
 import Messages exposing (Message, MessagePayload(..), messageDecoder)
 import Page exposing (Page, pageDecoder)
 import Process
-import Regex
 import Registration exposing (RegistrationFormState, encodeRegisterForm, initRegistrationForm)
 import Task
 import Terms exposing (..)
-import Time
 import User exposing (User, encodeUser, userDecoder)
 import Utils exposing (addIfNotPresent, isNothing, listWithout)
 
@@ -849,10 +848,10 @@ menuBar model =
             , div [ class "navbar-end" ]
                 [ case model.user of
                     Nothing ->
-                        a [ class "navbar-item", onClick OpenLoginSite ] [ text (getTerms model.language |> .signIn) ]
+                        a [ class "navbar-item", onClick OpenLoginSite ] [ Html.button [ class "button is-light is-rounded is-fullwidth" ] [ text (getTerms model.language |> .signIn) ] ]
 
                     Just user ->
-                        a [ class "navbar-item", onClick SignOutClicked ] [ text (getTerms model.language |> .signOut) ]
+                        a [ class "navbar-item", onClick SignOutClicked ] [ Html.button [ class "button is-light is-rounded" ] [ text (getTerms model.language |> .signOut) ] ]
                 ]
             ]
         ]
@@ -873,16 +872,20 @@ type FavouriteOption
     | FavouriteDisabled
 
 
-mainView : Html Msg
-mainView =
-    Html.section [ class "hero is-primary  is-fullheight" ] []
+mainView : Model -> Html Msg
+mainView model =
+    Html.map (\_ -> NoOp (Ok ())) <| Info.infoView model.language
+
+
+
+-- Html.section [ class "hero is-primary  is-fullheight" ] []
 
 
 footerView : Model -> Html Msg
 footerView model =
     Html.footer [ class "footer p-b-md p-t-md has-background-grey-light" ]
         [ div [ class "content has-text-centered " ]
-            [ Html.p [] [ text "Kacper Marzecki 2020 \n Icons: " ]
+            [ Html.p [] [ text "Kacper Marzecki 2020" ]
             , div []
                 [ text "Icons made by "
                 , a [ Html.Attributes.href "https://www.flaticon.com/authors/freepik", title "Freepik" ]
@@ -1480,7 +1483,7 @@ view model =
             Html.main_ [ class "hero is-primary  is-fullheight " ]
                 (case model.site of
                     MainSite ->
-                        [ div [] [ mainView ] ]
+                        [ div [] [ mainView model ] ]
 
                     FriendsSite ->
                         friendsSiteView model
